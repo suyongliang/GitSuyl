@@ -5,6 +5,9 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 
+import java.io.InputStream;
+import java.util.Properties;
+
 /**
  * @ClassName: ToastUtils
  * @author hx-suyl
@@ -60,6 +63,26 @@ public class AppUtils
             e.printStackTrace();
         }
         return null;
+    }
+
+    private static Properties urlProps;
+    public static Properties getProperties(Context c){
+        Properties props = new Properties();
+        try {
+            //方法一：通过activity中的context攻取setting.properties的FileInputStream
+            InputStream in = c.getAssets().open("appConfig.properties");
+            //方法二：通过class获取setting.properties的FileInputStream
+            //InputStream in = PropertiesUtill.class.getResourceAsStream("/assets/  setting.properties "));
+            props.load(in);
+        } catch (Exception e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+
+        urlProps = props;
+
+        System.out.println(urlProps.getProperty("serverUrl"));
+        return urlProps;
     }
 
 }

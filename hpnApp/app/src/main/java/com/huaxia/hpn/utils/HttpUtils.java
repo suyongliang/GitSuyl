@@ -5,7 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -146,7 +146,7 @@ public class HttpUtils
      */
     public static String doPost(String url, String param)
     {
-        PrintWriter out = null;
+        OutputStream out = null;
         BufferedReader in = null;
         String result = "";
         try {
@@ -167,21 +167,31 @@ public class HttpUtils
             conn.setDoInput(true);
             conn.setReadTimeout(TIMEOUT_IN_MILLIONS);
             conn.setConnectTimeout(TIMEOUT_IN_MILLIONS);
-
+            // 获取URLConnection对象对应的输出流
+            out = conn.getOutputStream();
             if (param != null && !param.trim().equals(""))
             {
-                // 获取URLConnection对象对应的输出流
-                out = new PrintWriter(conn.getOutputStream());
                 // 发送请求参数
-                out.print(param);
+                out.write(param.getBytes());
                 // flush输出流的缓冲
                 out.flush();
             }
-            // 定义BufferedReader输入流来读取URL的响应
-            in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-            String line;
-            while ((line = in.readLine()) != null) {
-                result += line;
+            /**
+             * 获取响应码  200=成功
+             * 当响应成功，获取响应的流
+             */
+
+            int res = conn.getResponseCode();
+            System.out.println("res========="+res);
+            if(res==200){
+                // 定义BufferedReader输入流来读取URL的响应
+                in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String line;
+                while ((line = in.readLine()) != null) {
+                    result += line;
+                }
+            }else {
+                result = "error";
             }
         } catch (Exception e) {
             e.printStackTrace();

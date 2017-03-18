@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">hpnApp</string>
+    <string name="app_name">无缝定位导航导览平台</string>
     <string name="action_settings">Settings</string>
     <string name="access_Token">sk.eyJ1Ijoic3V5b25nbGlhbmciLCJhIjoiY2l6cjJid3Z3MDAyOTJ5bnkycXRtMGo1diJ9.4cAtFBTjfLosgNznPFKMdw</string>
 </resources>
