@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 
 /**
  * @ClassName: ToastUtils
@@ -18,7 +19,7 @@ import java.net.URL;
 public class HttpUtils
 {
 
-    private static final int TIMEOUT_IN_MILLIONS = 5000;
+    private static final int TIMEOUT_IN_MILLIONS = 5000000;
 
     public interface CallBack
     {
@@ -155,26 +156,28 @@ public class HttpUtils
             HttpURLConnection conn = (HttpURLConnection) realUrl
                     .openConnection();
             // 设置通用的请求属性
-            conn.setRequestProperty("accept", "*/*");
-            conn.setRequestProperty("connection", "Keep-Alive");
+            // 设置请求方法，默认是GET
             conn.setRequestMethod("POST");
-            conn.setRequestProperty("Content-Type",
-                    "application/x-www-form-urlencoded");
-            conn.setRequestProperty("charset", "utf-8");
-            conn.setUseCaches(false);
+            // 设置字符集
+            conn.setRequestProperty("Charset", "UTF-8");
+            // 设置文件类型
+            conn.setRequestProperty("Content-Type", "text/xml; charset=UTF-8");
+            // 设置请求参数，可通过Servlet的getHeader()获取
+            conn.setRequestProperty("Cookie", "AppName=" + URLEncoder.encode("你好", "UTF-8"));
             // 发送POST请求必须设置如下两行
             conn.setDoOutput(true);
             conn.setDoInput(true);
-            conn.setReadTimeout(TIMEOUT_IN_MILLIONS);
-            conn.setConnectTimeout(TIMEOUT_IN_MILLIONS);
+//            conn.setReadTimeout(TIMEOUT_IN_MILLIONS);
+//            conn.setConnectTimeout(TIMEOUT_IN_MILLIONS);
             // 获取URLConnection对象对应的输出流
             out = conn.getOutputStream();
             if (param != null && !param.trim().equals(""))
             {
-                // 发送请求参数
+//                // 发送请求参数
                 out.write(param.getBytes());
-                // flush输出流的缓冲
+//                // flush输出流的缓冲
                 out.flush();
+                out.close();
             }
             /**
              * 获取响应码  200=成功

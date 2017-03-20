@@ -17,7 +17,7 @@ import android.widget.Toast;
 
 import com.huaxia.hpn.utils.AppUtils;
 import com.huaxia.hpn.utils.HttpUtils;
-import com.huaxia.hpn.utils.Img2Base64Utils;
+import com.huaxia.hpn.utils.ImageUtils;
 import com.huaxia.hpn.utils.IpMacUtils;
 
 import net.sf.json.JSONObject;
@@ -42,6 +42,7 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
     private static final int TIME_OUT = 10*1000;   //超时时间
     private static final String CHARSET = "utf-8"; //设置编码
     private String TAG = "PhotoActivity";
+    private Bitmap image;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +68,7 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
         }
     }
 
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onActivityResult(int requestCode, int resultCode, Intent data)  {
         super.onActivityResult(requestCode, resultCode, data);
 
         ImageView photo = (ImageView) mView.findViewById(mPhotoId);
@@ -76,7 +77,7 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
                 if (data != null) {
                     Uri mImageCaptureUri = (Uri) data.getExtras().get("uri");
                     if (mImageCaptureUri != null) {
-                        Bitmap image;
+//                        Bitmap image;
                         try {
                             //image = MediaStore.Images.Media.getBitmap(this.getActivity().getContentResolver(), mImageCaptureUri);
                             image = (Bitmap) data.getExtras().get("image");
@@ -116,7 +117,7 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
                     } else {
                         Bundle extras = data.getExtras();
                         if (extras != null) {
-                            Bitmap image = extras.getParcelable("data");
+                            image = extras.getParcelable("data");
                             if (image != null) {
                                 photo.setImageBitmap(image);
                             }
@@ -127,6 +128,13 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
             case 2:
                 if (data != null) {
                     Uri mImageCaptureUri = data.getData();
+                    if (mImageCaptureUri != null) {
+                        try{
+                            image = (Bitmap) ImageUtils.getBitmapFormUri(this, mImageCaptureUri);
+                        } catch (Exception e){
+                            e.printStackTrace();
+                        }
+                    }
                     if (mImageCaptureUri != null) {
                         photo.setImageURI(mImageCaptureUri);
                         ContentResolver cr = this.getContentResolver();
@@ -188,7 +196,7 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
 //      showProgressDialog();
         try {
             // 图片转换成base64
-            String imgBase64 = Img2Base64Utils.image2Base64(filePath);
+            String imgBase64 = ImageUtils.image2Base64(image);
             // 得到手机Mac
             String macCode = IpMacUtils.getMacFromWifi();
 
@@ -198,7 +206,6 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
             params.put("operater", "admin");
 
             HttpUtils.doPost(RequestURL, params.toString());
-
 
         } catch (Exception e) {
             e.printStackTrace();
