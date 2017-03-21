@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-//import android.util.Base64;
 
 /**
  * Created by hx-suyl on 2017/3/18.
@@ -29,14 +28,14 @@ import java.io.OutputStream;
 
 public class ImageUtils {
 
-    public static void main(String[] args) {
-        String imgFile = "d:\\3.jpg";//待处理的图片
-        String imgbese=image2Base64(imgFile);
-        System.out.println(imgbese.length());
-        System.out.println(imgbese);
-        String imgFilePath = "d:\\332.jpg";//新生成的图片
-        base642Image(imgbese,imgFilePath);
-    }
+//    public static void main(String[] args) {
+//        String imgFile = "d:\\3.jpg";//待处理的图片
+//        String imgbese=image2Base64(imgFile);
+//        System.out.println(imgbese.length());
+//        System.out.println(imgbese);
+//        String imgFilePath = "d:\\332.jpg";//新生成的图片
+//        base642Image(imgbese,imgFilePath);
+//    }
     /**
      * 将图片转换成Base64编码
      * @param imgFile 待处理图片
@@ -47,8 +46,7 @@ public class ImageUtils {
         InputStream in = null;
         byte[] data = null;
         //读取图片字节数组
-        try
-        {
+        try {
             in = new FileInputStream(imgFile);
             data = new byte[in.available()];
             in.read(data);
@@ -71,7 +69,7 @@ public class ImageUtils {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         bit.compress(Bitmap.CompressFormat.JPEG, 100, bos);//参数100表示不压缩
         byte[] bytes=bos.toByteArray();
-        return Base64.encodeToString(bytes, 0, bytes.length, Base64.NO_WRAP);
+        return Base64.encodeToString(bytes, 0, bytes.length, Base64.DEFAULT);
     }
 
     /**

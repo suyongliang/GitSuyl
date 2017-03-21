@@ -16,11 +16,14 @@ import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.huaxia.hpn.utils.AppUtils;
-import com.huaxia.hpn.utils.HttpUtils;
 import com.huaxia.hpn.utils.ImageUtils;
 import com.huaxia.hpn.utils.IpMacUtils;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 
-import net.sf.json.JSONObject;
+import org.apache.http.Header;
+import org.json.JSONObject;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -32,6 +35,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+
+import static com.huaxia.hpn.utils.ImageUtils.image2Base64;
 
 @SuppressLint("NewApi")
 public class PhotoActivity extends AppCompatActivity implements View.OnClickListener {
@@ -176,12 +181,13 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
         params.put("file_type", "1");
 //        params.put("content", img_content.getText().toString());
 //        showProgressDialog();
-        new Thread(new Runnable() { //开启线程上传文件
-            @Override
-            public void run() {
-                uploadFile(srcPath, RequestURL,params);
-            }
-        }).start();
+//        new Thread(new Runnable() { //开启线程上传文件
+//            @Override
+//            public void run() {
+//                uploadFile(srcPath, RequestURL,params);
+//            }
+//        }).start();
+        uploadFile(srcPath, RequestURL,params);
     }
 
     /**
@@ -195,17 +201,36 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
         // 显示进度框
 //      showProgressDialog();
         try {
-            // 图片转换成base64
-            String imgBase64 = ImageUtils.image2Base64(image);
-            // 得到手机Mac
+//            // 图片转换成base64
+            String imgBase64 = image2Base64(image);
+//            // 得到手机Mac
             String macCode = IpMacUtils.getMacFromWifi();
-
-            JSONObject params = new JSONObject();
+//
+//            Map<String, Object> params = new HashMap<String, Object>();
+//            params.put("macCode", macCode);
+//            params.put("photo", imgBase64);
+//            params.put("operater", "admin");
+//
+//            HttpUtils.doPost(RequestURL, imgBase64.toString());
+//            File file = new File(filePath); //这里的path就是那个地址的全局变量
+//
+//            result = UploadUtils.uploadFile(file, RequestURL);
+//photo=URLEncoder.encode(photo,"UTF-8");
+            AsyncHttpClient client = new AsyncHttpClient();
+            RequestParams params = new RequestParams();
             params.put("macCode", macCode);
             params.put("photo", imgBase64);
-            params.put("operater", "admin");
 
-            HttpUtils.doPost(RequestURL, params.toString());
+            client.post(RequestURL, params, new JsonHttpResponseHandler() {
+                @Override
+                public void onSuccess(int statusCode, Header[] headers, JSONObject response){
+                    Toast.makeText(getApplicationContext(), "头像上传成功!", Toast.LENGTH_SHORT).show();
+                }
+                @Override
+                public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse){
+                    Toast.makeText(getApplicationContext(), "头像上传失败!", Toast.LENGTH_SHORT).show();
+                }
+            });
 
         } catch (Exception e) {
             e.printStackTrace();
