@@ -13,7 +13,12 @@
         android:id="@+id/mapView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        mapbox:style_url="mapbox://styles/maper/ciwvpz28c002z2qpqxdg2m5cy">
+        mapbox:style_url="mapbox://styles/maper/ciwvpz28c002z2qpqxdg2m5cy"
+        mapbox:center_longitude="112.520855"
+        mapbox:center_latitude="-0.008069"
+        mapbox:zoom="10"
+        mapbox:logo_enabled="false"
+        mapbox:attribution_enabled="false">
 
         <android.support.design.widget.FloatingActionButton
             android:id="@+id/location_toggle_fab"
@@ -40,7 +45,6 @@
             android:elevation="12dp"
             android:hint="Search Location"
             android:padding="10dp"
-            android:singleLine="true"
             android:textColor="@android:color/black"/>
     </com.mapbox.mapboxsdk.maps.MapView>
 

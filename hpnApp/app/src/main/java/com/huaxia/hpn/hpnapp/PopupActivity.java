@@ -25,16 +25,7 @@ public class PopupActivity extends Activity implements OnClickListener {
     private Button btn_take_photo, btn_pick_photo, btn_cancel;
     private LinearLayout layout;
     private Intent intent;
-
-    private Button showList;
-    private Button uploadNow;
     private String mCurrentPhotoPath;
-    private Bitmap sourcePic;
-    private File dir = null;
-
-    private String picName = null;
-    private String uploadFile = null;
-
     static Uri capturedImageUri=null;
     private Bitmap bitmap = null;
 

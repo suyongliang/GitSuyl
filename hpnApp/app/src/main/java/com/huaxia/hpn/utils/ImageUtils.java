@@ -11,6 +11,8 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.util.Base64;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -20,22 +22,44 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URL;
+
+import static com.google.common.io.ByteStreams.copy;
 
 
 /**
  * Created by hx-suyl on 2017/3/18.
  */
-
 public class ImageUtils {
 
-//    public static void main(String[] args) {
-//        String imgFile = "d:\\3.jpg";//待处理的图片
-//        String imgbese=image2Base64(imgFile);
-//        System.out.println(imgbese.length());
-//        System.out.println(imgbese);
-//        String imgFilePath = "d:\\332.jpg";//新生成的图片
-//        base642Image(imgbese,imgFilePath);
-//    }
+    /**
+     * 获取网络图片的数据
+     * @param path 网络图片路径
+     * @return
+     */
+    public static Bitmap getImage(String path) throws Exception{
+
+        Bitmap bitmap = null;
+        InputStream in = null;
+        BufferedOutputStream out = null;
+        try {
+            in = new BufferedInputStream(new URL(path).openStream(), 1000);
+            final ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
+            out = new BufferedOutputStream(dataStream, 1000);
+            copy(in, out);
+            out.flush();
+            byte[] data = dataStream.toByteArray();
+            bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+            data = null;
+            return bitmap;
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     /**
      * 将图片转换成Base64编码
      * @param imgFile 待处理图片
@@ -252,4 +276,13 @@ public class ImageUtils {
         }
         return returnBm;
     }
+
+    //    public static void main(String[] args) {
+//        String imgFile = "d:\\3.jpg";//待处理的图片
+//        String imgbese=image2Base64(imgFile);
+//        System.out.println(imgbese.length());
+//        System.out.println(imgbese);
+//        String imgFilePath = "d:\\332.jpg";//新生成的图片
+//        base642Image(imgbese,imgFilePath);
+//    }
 }

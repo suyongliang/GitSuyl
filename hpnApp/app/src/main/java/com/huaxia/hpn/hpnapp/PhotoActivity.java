@@ -23,6 +23,7 @@ import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
 import org.apache.http.Header;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedOutputStream;
@@ -48,26 +49,32 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
     private static final String CHARSET = "utf-8"; //设置编码
     private String TAG = "PhotoActivity";
     private Bitmap image;
+    private Intent mainIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo);
         mView = (View) findViewById(R.id.imageView);
+        mainIntent = getIntent();
         findViewById(R.id.choose_image).setOnClickListener(this);
         findViewById(R.id.upload_image).setOnClickListener(this);
     }
 
     @Override
     public void onClick(View view) {
+        mPhotoId = R.id.imageView;
         switch (view.getId()) {
             case R.id.choose_image:// 选择图片
                 Intent popupIntent = new Intent(PhotoActivity.this, PopupActivity.class);
-                mPhotoId = R.id.imageView;
                 startActivityForResult(popupIntent, 1);
                 break;
             case R.id.upload_image: // 上传图片
 //                uploadImage();
+                ImageView photo = (ImageView) mView.findViewById(mPhotoId);
+                if(photo.getDrawable() == null){
+                    Toast.makeText(getApplicationContext(), "请选择图片!", Toast.LENGTH_SHORT).show();
+                }
                 submitUploadFile();
                 break;
         }
@@ -161,12 +168,12 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
                 break;
         }
     }
+
     private void submitUploadFile(){
         if(srcPath == null || "".equals(srcPath)){
             return;
         }
         final File file=new File(srcPath);
-//        ResourceBundle bundle = ResourceBundle.getBundle("system.properties");
         Properties properties = AppUtils.getProperties(getApplicationContext());
         final String RequestURL=properties.getProperty("photo_uploadUrl");
         Log.i("URL", RequestURL);
@@ -177,7 +184,6 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
         Log.i(TAG, "请求的URL=" + RequestURL);
         Log.i(TAG, "请求的fileName=" + file.getName());
         final Map<String, String> params = new HashMap<String, String>();
-//        params.put("user_id", loginKey);
         params.put("file_type", "1");
 //        params.put("content", img_content.getText().toString());
 //        showProgressDialog();
@@ -198,37 +204,45 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
      */
     private String uploadFile(String filePath,String RequestURL,Map<String, String> param){
         String result = null;
-        // 显示进度框
-//      showProgressDialog();
         try {
 //            // 图片转换成base64
             String imgBase64 = image2Base64(image);
 //            // 得到手机Mac
             String macCode = IpMacUtils.getMacFromWifi();
-//
 //            Map<String, Object> params = new HashMap<String, Object>();
 //            params.put("macCode", macCode);
 //            params.put("photo", imgBase64);
 //            params.put("operater", "admin");
 //
 //            HttpUtils.doPost(RequestURL, imgBase64.toString());
-//            File file = new File(filePath); //这里的path就是那个地址的全局变量
-//
-//            result = UploadUtils.uploadFile(file, RequestURL);
-//photo=URLEncoder.encode(photo,"UTF-8");
             AsyncHttpClient client = new AsyncHttpClient();
             RequestParams params = new RequestParams();
             params.put("macCode", macCode);
             params.put("photo", imgBase64);
-
+            params.put("operater", "app");
+            client.setConnectTimeout(100000);
             client.post(RequestURL, params, new JsonHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response){
-                    Toast.makeText(getApplicationContext(), "头像上传成功!", Toast.LENGTH_SHORT).show();
+                    try {
+                        Toast.makeText(getApplicationContext(), "图片上传成功!", Toast.LENGTH_SHORT).show();
+                        mainIntent.putExtra("image", response.get("collectionses").toString());
+                        mainIntent.putExtra("requestCode", RESULT_OK);
+                        setResult(RESULT_OK, mainIntent);
+                        PhotoActivity.this.finish();
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                 }
                 @Override
                 public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse){
-                    Toast.makeText(getApplicationContext(), "头像上传失败!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "图片上传失败!", Toast.LENGTH_SHORT).show();
+                    PhotoActivity.this.finish();
+                }
+                @Override
+                public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                    Toast.makeText(getApplicationContext(), "图片上传失败!", Toast.LENGTH_SHORT).show();
+                    PhotoActivity.this.finish();
                 }
             });
 
