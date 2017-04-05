@@ -1,11 +1,21 @@
 package com.huaxia.hpn.hpnapp;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -13,12 +23,15 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import com.esri.core.geometry.Point;
+import com.esri.core.geometry.SpatialReference;
 import com.huaxia.hpn.utils.IpMacUtils;
 import com.mapbox.mapboxsdk.MapboxAccountManager;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
+import com.mapbox.mapboxsdk.constants.MyLocationTracking;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.location.LocationListener;
 import com.mapbox.mapboxsdk.location.LocationServices;
@@ -40,6 +53,7 @@ import com.mapbox.services.geocoding.v5.models.CarmenFeature;
 import net.sf.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -47,8 +61,12 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import ips.casm.com.radiomap.MPoint;
+import ips.casm.com.util.iMessage;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -66,19 +84,36 @@ public class MainActivity2 extends AppCompatActivity {
 
     private String result;
 
+    private Point mPoint;
+    private Intent startIpsServiceIntent;
+    private String rmFilePathStr=null;
+    private BroadcastReceiver mIPSPointReceiver;
+    private IntentFilter ipsPointRecerverIntentFilter;
+    private Map pointMap = new HashMap();
+    SpatialReference cgcs2000NoneZone=SpatialReference.create(4548);
+    SpatialReference cgcs2000Geodetic=SpatialReference.create(4490);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         MapboxAccountManager.start(this, getString(R.string.access_Token));
+//        Mapbox.getInstance(this, getString(R.string.access_Token));
         setContentView(R.layout.activity_main2);
         locationServices = LocationServices.getLocationServices(MainActivity2.this);
+
+        // Get the location engine object for later use.
+//        LocationEngine locationEngine = LocationSource.getLocationEngine(this);
+//        locationEngine.activate();
+//        locationEngine.requestLocationUpdates();
+
         try{
             // 开启一个子线程，进行网络操作，等待有返回结果，使用handler通知UI
             new Thread(getThread).start();
         }catch (Exception e){
             e.printStackTrace();
         }
+        // 取得经纬度和方位角
+        getPointAndAzimuth();
 
         // Set up the MapView
         mapView = (MapView) findViewById(R.id.mapView);
@@ -89,6 +124,16 @@ public class MainActivity2 extends AppCompatActivity {
                 map = mapboxMap;
                 //toggleGps(!map.isMyLocationEnabled());
                 longclick(map);
+
+                toggleGps(true);
+                // Enable user tracking to show the padding affect.
+                map.getTrackingSettings().setMyLocationTrackingMode(MyLocationTracking.TRACKING_FOLLOW);
+//                map.getTrackingSettings().setDismissAllTrackingOnGesture(false);
+//
+                // Customize the user location icon using the getMyLocationViewSettings object.
+                map.getMyLocationViewSettings().setPadding(0, 500, 0, 0);
+                map.getMyLocationViewSettings().setForegroundTintColor(Color.parseColor("#56B881"));
+                map.getMyLocationViewSettings().setAccuracyTintColor(Color.parseColor("#FBB03B"));
             }
         });
         String mac = IpMacUtils.getMacFromWifi();
@@ -252,7 +297,9 @@ public class MainActivity2 extends AppCompatActivity {
                         // listener so the camera isn't constantly updating when the user location
                         // changes. When the user disables and then enables the location again, this
                         // listener is registered again and will adjust the camera once again.
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 16));
+//                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 16));
+                        Point point = (Point)pointMap.get("Point");
+                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(), point.getX()), 16));
                         locationServices.removeLocationListener(this);
                     }
                 }
@@ -283,11 +330,11 @@ public class MainActivity2 extends AppCompatActivity {
         mapView.onSaveInstanceState(outState);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mapView.onDestroy();
-    }
+//    @Override
+//    protected void onDestroy() {
+//        super.onDestroy();
+//        mapView.onDestroy();
+//    }
 
     @Override
     public void onLowMemory() {
@@ -365,5 +412,105 @@ public class MainActivity2 extends AppCompatActivity {
             }
         };
     };
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSIONS_LOCATION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                enableLocation(true);
+            }
+        }
+    }
+
+// 调用毕博士的service
+    private void getPointAndAzimuth(){
+        //取得指纹数据
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            String SystemDirPath=Environment.getExternalStorageDirectory().toString();
+            String IPSFolderPath=SystemDirPath+ File.separator+"IndoorPositionSystem";
+            String RadioMapPath=IPSFolderPath+File.separator+"RadioMap";
+            String rmfilePath=RadioMapPath+File.separator+"Dice_Radio_Map.txt";
+            //魅族手机获取的是相对路径。
+            File rmFile=new File(rmfilePath);
+            if (!rmFile.exists()) {
+                Toast.makeText(MainActivity2.this, "没有找到该指纹库文件", Toast.LENGTH_SHORT).show();
+                finish();
+            }else {
+                rmFilePathStr=rmfilePath;
+                Log.i("IPS_DCActivity","获得的文件路径为："+rmfilePath);
+            }
+        }
+        startIpsServiceIntent=new Intent(MainActivity2.this,ips.casm.com.service.MIPSService.class);
+        Bundle ipsServiceBundle=new Bundle();
+        ipsServiceBundle.putString(iMessage.IN_FILE_PATH, rmFilePathStr);
+        startIpsServiceIntent.putExtras(ipsServiceBundle);
+//        startIpsServiceIntent.putExtra(iMessage.IN_FILE_PATH, rmFilePathStr);
+        bindService(startIpsServiceIntent, this.ipsServiceConnection, Context.BIND_AUTO_CREATE);
+
+        mIPSPointReceiver=new MainActivity2.IPSPointReceiver();
+        ipsPointRecerverIntentFilter=new IntentFilter(iMessage.sendIPSPoint2ActivityBroadcastActionIntent);
+        registerReceiver(mIPSPointReceiver,ipsPointRecerverIntentFilter);
+    }
+
+
+    private ServiceConnection ipsServiceConnection=new ServiceConnection(){
+        /**
+         * 获取service调用
+         */
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            // TODO Auto-generated method stub
+//            mIPSService=((MIPSService.MBinder)(service)).getService();
+        }
+
+        public void onServiceDisconnected(ComponentName name) {
+            // TODO Auto-generated method stub
+        }
+    };
+
+    private class IPSPointReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.i("IPSPointReceiver", "调用onReceiver()方法");
+            // TODO Auto-generated method stub
+            //获得service回传的point
+            MPoint point_Plane = (MPoint) intent.getExtras().get(iMessage.sendIPSPoint2ActivityBroadcastActionKey);
+
+            //创建geometry
+            final Point point=new Point(point_Plane.x, point_Plane.y);
+
+//            point.setX(112.42031428740871+(point.getX()-450460.3487085744)/100000);
+//            point.setY(39.94748200954813+(point.getY()-4423858.654904741)/100000);
+
+            Log.i("IPSPointReceiver", point_Plane.toString());
+//			//创建投影坐标系的空间参考
+//			SpatialReference cgcs2000NoneZone=SpatialReference.create(4548);
+//			//获取当前地图的空间参考
+//			SpatialReference cgcs2000Geodetic=mMapView.getSpatialReference();
+            //投影反算,获得点位信息
+//            mPoint=(Point) GeometryEngine.project(point, cgcs2000NoneZone, cgcs2000Geodetic);
+            Log.i("IPSPointReceiver", "投影后坐标为："+point_Plane.x+","+point_Plane.y);
+            //获得azimuth
+            float azimuth=point_Plane.getAzimuth();
+            pointMap.put("Point", point);
+            pointMap.put("Azimuth", azimuth);
+
+            Log.i("pointMap", pointMap.toString());
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mapView!=null) {
+            mapView.onDestroy();
+        }
+        if (startIpsServiceIntent!=null) {
+            stopService(startIpsServiceIntent);
+        }
+        if (mIPSPointReceiver!=null) {
+            unregisterReceiver(mIPSPointReceiver);
+        }
+        System.gc();
+    }
 }
 

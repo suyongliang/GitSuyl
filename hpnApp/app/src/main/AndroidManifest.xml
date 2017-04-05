@@ -30,16 +30,15 @@
         <activity android:name=".MainActivity" />
         <activity android:name=".MainActivity2" />
         <activity android:name=".PhotoGuideActivity" />
-
+        <activity android:name=".PhotoActivity" />
+        <activity android:name=".PopupActivity" />
+        <activity android:name=".MapBoxActivity"></activity>
         <service android:name="com.mapbox.mapboxsdk.telemetry.TelemetryService" />
         <service android:name="ips.casm.com.service.MIPSService">
             <intent-filter>
                 <action android:name="ips.casm.com.service.MIPSService"/>
             </intent-filter>
         </service>
-        <activity android:name=".PhotoActivity" />
-        <activity android:name=".PopupActivity" />
-        <activity android:name=".MapBoxActivity"></activity>
     </application>
 
 </manifest>
