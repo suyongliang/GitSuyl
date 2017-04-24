@@ -149,4 +149,24 @@
     <color name="darkblue">#00008B</color><!--暗蓝色 -->
     <color name="navy">#000080</color><!--海军色 -->
     <color name="black">#000000</color><!--黑色 -->
+    <color name="black_semi_transparent">#B2000000</color>
+
+    <color name="mapboxWhite">#ffffff</color>
+    <color name="mapboxCyan">#3BB2D0</color>
+    <color name="mapboxGreen">#56B881</color>
+    <color name="mapboxBlue">#3887BE</color>
+    <color name="mapboxBlueDark">#1F6EA5</color>
+    <color name="mapboxPurple">#8A8ACB</color>
+    <color name="mapboxPurpleDark">#7171b2</color>
+    <color name="mapboxPurpleLight">#A4A4E5</color>
+
+    <color name="mapboxDenim">#50667F</color>
+    <color name="mapboxTeal">#41AFA5</color>
+    <color name="mapboxOrange">#F9886C</color>
+    <color name="mapboxRed">#E55E5E</color>
+    <color name="mapboxPink">#ED6498</color>
+    <color name="mapboxYellow">#f1f075</color>
+    <color name="mapboxMustard">#FBB03B</color>
+    <color name="mapboxNavy">#28353D</color>
+    <color name="mapboxNavyDark">#222B30</color>
 </resources>

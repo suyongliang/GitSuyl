@@ -10,9 +10,8 @@ import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.util.Base64;
+import android.util.Log;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -22,42 +21,45 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
-
-import static com.google.common.io.ByteStreams.copy;
 
 
 /**
  * Created by hx-suyl on 2017/3/18.
  */
 public class ImageUtils {
-
+private static final String TAG = "ImageUtils";
     /**
      * 获取网络图片的数据
      * @param path 网络图片路径
-     * @return
+     * @return bitmap
      */
     public static Bitmap getImage(String path) throws Exception{
 
+        Log.v(TAG, "getbitmap:" + path);
+        // 显示网络上的图片
         Bitmap bitmap = null;
-        InputStream in = null;
-        BufferedOutputStream out = null;
         try {
-            in = new BufferedInputStream(new URL(path).openStream(), 1000);
-            final ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
-            out = new BufferedOutputStream(dataStream, 1000);
-            copy(in, out);
-            out.flush();
-            byte[] data = dataStream.toByteArray();
-            bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-            data = null;
-            return bitmap;
-        }
-        catch (IOException e)
-        {
+            URL myFileUrl = new URL(path);
+            HttpURLConnection conn = (HttpURLConnection) myFileUrl
+                    .openConnection();
+            conn.setDoInput(true);
+            conn.connect();
+            InputStream is = conn.getInputStream();
+            bitmap = BitmapFactory.decodeStream(is);
+            is.close();
+
+            Log.v(TAG, "image download finished." + path);
+        } catch (OutOfMemoryError e) {
             e.printStackTrace();
-            return null;
+            bitmap = null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.v(TAG, "getbitmap bmp fail---");
+            bitmap = null;
         }
+        return bitmap;
     }
 
     /**

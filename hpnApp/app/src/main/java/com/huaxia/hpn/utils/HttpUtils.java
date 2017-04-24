@@ -11,7 +11,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.Map;
 
 /**
@@ -163,11 +162,13 @@ public class HttpUtils
             // 设置请求方法，默认是GET
             conn.setRequestMethod("POST");
             // 设置字符集
+            conn.addRequestProperty("encoding", "UTF-8");
             conn.setRequestProperty("Charset", "UTF-8");
             // 设置文件类型
-            conn.setRequestProperty("Content-Type", "text/xml; charset=UTF-8");
+            conn.setRequestProperty("Content-Type", "text/xml");
+//            conn.setRequestProperty("content-type", "application/x-www-form-urlencoded;charset=UTF-8");
             // 设置请求参数，可通过Servlet的getHeader()获取
-            conn.setRequestProperty("Cookie", "AppName=" + URLEncoder.encode("你好", "UTF-8"));
+//            conn.setRequestProperty("Cookie", "AppName=" + URLEncoder.encode("你好", "UTF-8"));
             // 发送POST请求必须设置如下两行
             conn.setDoOutput(true);
             conn.setDoInput(true);

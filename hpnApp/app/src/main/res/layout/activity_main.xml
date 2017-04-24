@@ -7,13 +7,10 @@
     android:orientation="vertical"
     tools:context="com.huaxia.hpn.hpnapp.MainActivity">
 
-    <include layout="@layout/activity_top"
-        android:id="@+id/includeTop" />
     <ImageView
         android:id="@+id/imageView2"
         android:layout_width="match_parent"
         android:layout_height="300dp"
-        android:layout_below="@id/includeTop"
         android:layout_alignParentLeft="true"
         android:layout_alignParentStart="true" />
     <TextView

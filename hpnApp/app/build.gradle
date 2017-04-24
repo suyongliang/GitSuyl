@@ -9,7 +9,7 @@ android {
 //    }
     defaultConfig {
         applicationId "com.huaxia.hpn.hpnapp"
-        minSdkVersion 15
+        minSdkVersion 16
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
@@ -33,11 +33,8 @@ android {
     }
 }
 
-repositories{
-    jcenter()
-    maven{
-        url 'http://dl.bintray.com/esri/arcgis'
-    }
+repositories {
+    mavenCentral()
 }
 
 dependencies {
@@ -51,12 +48,20 @@ dependencies {
     //compile 'com.esri.arcgis.android:arcgis-android:10.2.9'
 //    compile files('libs/arcgis-android-api.jar')
     compile files('libs/ips.jar')
-    compile('com.mapbox.mapboxsdk:mapbox-android-sdk:4.2.2@aar') {
+    compile('com.mapbox.mapboxsdk:mapbox-android-sdk:5.0.0@aar') {
         transitive = true
     }
-    compile('com.mapbox.mapboxsdk:mapbox-android-services:1.3.1@aar') {
+//    compile('com.mapbox.mapboxsdk:mapbox-android-services:2.0.0@aar') {
+//        transitive = true
+//    }
+    // Mapbox Android UI
+    compile('com.mapbox.mapboxsdk:mapbox-android-ui:2.0.0@aar') {
         transitive = true
     }
+    compile 'com.google.code.gson:gson:2.6.2'
+    compile 'com.squareup.retrofit2:retrofit:2.1.0'
+    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+
     compile('net.sf.json-lib:json-lib:2.4:jdk15') {
         transitive = true
     }

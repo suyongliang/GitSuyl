@@ -27,7 +27,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/guide_ib_start"
-        android:src="@drawable/ic_navigation_black_24dp"
+        android:src="@drawable/ic_navigation_black"
         android:layout_above="@+id/guide_ll_point"
         android:background="@mipmap/guide3"
         android:visibility="gone"/>

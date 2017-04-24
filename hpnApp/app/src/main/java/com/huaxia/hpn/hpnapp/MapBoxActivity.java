@@ -21,29 +21,32 @@ import android.widget.Toast;
 
 import com.esri.core.geometry.Point;
 import com.esri.core.geometry.SpatialReference;
-import com.mapbox.mapboxsdk.MapboxAccountManager;
+import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.mapboxsdk.location.LocationListener;
-import com.mapbox.mapboxsdk.location.LocationServices;
+import com.mapbox.mapboxsdk.location.LocationSource;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.services.Constants;
-import com.mapbox.services.android.geocoder.ui.GeocoderAutoCompleteView;
-import com.mapbox.services.commons.ServicesException;
+import com.mapbox.services.android.telemetry.location.LocationEngine;
+import com.mapbox.services.android.telemetry.location.LocationEngineListener;
+import com.mapbox.services.android.telemetry.permissions.PermissionsManager;
+import com.mapbox.services.android.ui.geocoder.GeocoderAutoCompleteView;
+import com.mapbox.services.api.ServicesException;
+import com.mapbox.services.api.directions.v5.DirectionsCriteria;
+import com.mapbox.services.api.directions.v5.MapboxDirections;
+import com.mapbox.services.api.directions.v5.models.DirectionsResponse;
+import com.mapbox.services.api.directions.v5.models.DirectionsRoute;
+import com.mapbox.services.api.geocoding.v5.GeocodingCriteria;
+import com.mapbox.services.api.geocoding.v5.models.CarmenFeature;
 import com.mapbox.services.commons.geojson.LineString;
 import com.mapbox.services.commons.models.Position;
-import com.mapbox.services.directions.v5.DirectionsCriteria;
-import com.mapbox.services.directions.v5.MapboxDirections;
-import com.mapbox.services.directions.v5.models.DirectionsResponse;
-import com.mapbox.services.directions.v5.models.DirectionsRoute;
-import com.mapbox.services.geocoding.v5.GeocodingCriteria;
-import com.mapbox.services.geocoding.v5.models.CarmenFeature;
+import com.mapzen.android.lost.api.LocationServices;
 
 import java.io.File;
 import java.util.HashMap;
@@ -62,7 +65,8 @@ public class MapBoxActivity extends Activity {
     private MapView mapView;
     private MapboxMap map;
     private FloatingActionButton floatingActionButton;
-    private LocationServices locationServices;
+    private LocationEngine locationEngine;
+    private LocationEngineListener locationEngineListener;
     private DirectionsRoute currentRoute;
     private Point mPoint;
     private Intent startIpsServiceIntent;
@@ -82,10 +86,13 @@ public class MapBoxActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        MapboxAccountManager.start(this, getString(R.string.access_Token));
-        //Mapbox.getInstance(this, getString(R.string.access_token));
+//        MapboxAccountManager.start(this, getString(R.string.access_Token));
+        Mapbox.getInstance(this, getString(R.string.access_Token));
         setContentView(R.layout.activity_mapbox);
-        locationServices = LocationServices.getLocationServices(MapBoxActivity.this);
+//        locationServices = LocationServices.getLocationServices(MapBoxActivity.this);
+
+        // Get the location engine object for later use.
+        locationEngine = LocationSource.getLocationEngine(this);
 
         // Set up the MapView
         mapView = (MapView) findViewById(R.id.mapView);
@@ -122,11 +129,11 @@ public class MapBoxActivity extends Activity {
         });
         // Set up autocomplete widget
         GeocoderAutoCompleteView autocomplete = (GeocoderAutoCompleteView) findViewById(R.id.query);
-        autocomplete.setAccessToken(MapboxAccountManager.getInstance().getAccessToken());
+        autocomplete.setAccessToken(Mapbox.getAccessToken());
         autocomplete.setType(GeocodingCriteria.TYPE_POI);
         autocomplete.setOnFeatureListener(new GeocoderAutoCompleteView.OnFeatureListener() {
             @Override
-            public void OnFeatureClick(CarmenFeature feature) {
+            public void onFeatureClick(CarmenFeature feature) {
                 Position position = feature.asPosition();
                 updateMap(position.getLatitude(), position.getLongitude());
             }
@@ -240,8 +247,8 @@ public class MapBoxActivity extends Activity {
     private void toggleGps(boolean enableGps) {
         if (enableGps) {
             // Check if user has granted location permission
-            if (!locationServices.areLocationPermissionsGranted()) {
-                ActivityCompat.requestPermissions(this, new String[]{
+            if (!PermissionsManager.areLocationPermissionsGranted(this)) {
+                ActivityCompat.requestPermissions(this, new String[] {
                         Manifest.permission.ACCESS_COARSE_LOCATION,
                         Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSIONS_LOCATION);
             } else {
@@ -255,12 +262,17 @@ public class MapBoxActivity extends Activity {
     private void enableLocation(boolean enabled) {
         if (enabled) {
             // If we have the last location of the user, we can move the camera to that position.
-            Location lastLocation = locationServices.getLastLocation();
+            Location lastLocation = locationEngine.getLastLocation();
             if (lastLocation != null) {
                 map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLocation), 16));
             }
 
-            locationServices.addLocationListener(new LocationListener() {
+            locationEngineListener = new LocationEngineListener() {
+                @Override
+                public void onConnected() {
+                    locationEngine.requestLocationUpdates();
+                }
+
                 @Override
                 public void onLocationChanged(Location location) {
                     if (location != null) {
@@ -269,10 +281,11 @@ public class MapBoxActivity extends Activity {
                         // changes. When the user disables and then enables the location again, this
                         // listener is registered again and will adjust the camera once again.
                         map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 16));
-                        locationServices.removeLocationListener(this);
+                        locationEngine.removeLocationEngineListener(this);
                     }
                 }
-            });
+            };
+            locationEngine.addLocationEngineListener(locationEngineListener);
             floatingActionButton.setImageResource(R.drawable.ic_location_disabled_24dp);
         } else {
             floatingActionButton.setImageResource(R.drawable.ic_my_location_24dp);
@@ -356,6 +369,9 @@ public class MapBoxActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (locationEngineListener != null) {
+            locationEngine.removeLocationEngineListener(locationEngineListener);
+        }
         if (mapView!=null) {
             mapView.onDestroy();
         }
