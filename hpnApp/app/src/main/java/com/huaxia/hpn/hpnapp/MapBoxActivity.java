@@ -17,6 +17,8 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.esri.core.geometry.Point;
@@ -32,6 +34,12 @@ import com.mapbox.mapboxsdk.location.LocationSource;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.style.functions.Function;
+import com.mapbox.mapboxsdk.style.functions.stops.Stop;
+import com.mapbox.mapboxsdk.style.functions.stops.Stops;
+import com.mapbox.mapboxsdk.style.layers.FillLayer;
+import com.mapbox.mapboxsdk.style.layers.LineLayer;
+import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.services.Constants;
 import com.mapbox.services.android.telemetry.location.LocationEngine;
 import com.mapbox.services.android.telemetry.location.LocationEngineListener;
@@ -49,6 +57,8 @@ import com.mapbox.services.commons.models.Position;
 import com.mapzen.android.lost.api.LocationServices;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +68,11 @@ import ips.casm.com.util.iMessage;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillColor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillOpacity;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineColor;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineWidth;
 
 public class MapBoxActivity extends Activity {
     private static final String TAG = "Activity";
@@ -78,10 +93,10 @@ public class MapBoxActivity extends Activity {
 //    private Drawable maker_img_locate,newmarker;//定位指向标志
     private Map pointMap = new HashMap();
 
-    SpatialReference cgcs2000NoneZone=SpatialReference.create(4548);
-    SpatialReference cgcs2000Geodetic=SpatialReference.create(4490);
-
     private String result;
+
+    private View levelButtons;
+    private GeoJsonSource indoorBuildingSource;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,6 +126,18 @@ public class MapBoxActivity extends Activity {
                     map.removeMarker(maker);
                 }
                 map.addMarker(new MarkerOptions().position(new LatLng(-0.008069, 112.520855)));
+
+                levelButtons = findViewById(R.id.floor_level_buttons);
+                AlphaAnimation animation = new AlphaAnimation(0.0f, 1.0f);
+                animation.setDuration(500);
+                levelButtons.startAnimation(animation);
+                levelButtons.setVisibility(View.VISIBLE);
+
+//                indoorBuildingSource = new GeoJsonSource("indoor-building", loadJsonFromAsset("routes.geojson"));
+//                mapboxMap.addSource(indoorBuildingSource);
+//
+//                // Add the building layers since we know zoom levels in range
+//                loadBuildingLayer();
             }
         });
 
@@ -128,14 +155,42 @@ public class MapBoxActivity extends Activity {
             }
         });
         // Set up autocomplete widget
-        GeocoderAutoCompleteView autocomplete = (GeocoderAutoCompleteView) findViewById(R.id.query);
-        autocomplete.setAccessToken(Mapbox.getAccessToken());
-        autocomplete.setType(GeocodingCriteria.TYPE_POI);
-        autocomplete.setOnFeatureListener(new GeocoderAutoCompleteView.OnFeatureListener() {
+//        GeocoderAutoCompleteView autocomplete = (GeocoderAutoCompleteView) findViewById(R.id.query);
+//        autocomplete.setAccessToken(Mapbox.getAccessToken());
+//        autocomplete.setType(GeocodingCriteria.TYPE_POI);
+//        autocomplete.setOnFeatureListener(new GeocoderAutoCompleteView.OnFeatureListener() {
+//            @Override
+//            public void onFeatureClick(CarmenFeature feature) {
+//                Position position = feature.asPosition();
+//                updateMap(position.getLatitude(), position.getLongitude());
+//            }
+//        });
+
+        Button buttonSecondLevel = (Button) findViewById(R.id.second_level_button);
+        buttonSecondLevel.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onFeatureClick(CarmenFeature feature) {
-                Position position = feature.asPosition();
-                updateMap(position.getLatitude(), position.getLongitude());
+            public void onClick(View view) {
+//                indoorBuildingSource.setGeoJson(loadJsonFromAsset("white_house_lvl_1.geojson"));
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(new LatLng(-0.008069, 112.520855))
+                        .zoom(10)
+                        .build();
+                map.setStyleUrl("mapbox://styles/maper/ciwvpz28c002z2qpqxdg2m5cy");
+                map.setCameraPosition(cameraPosition);
+            }
+        });
+
+        Button buttonGroundLevel = (Button) findViewById(R.id.ground_level_button);
+        buttonGroundLevel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+//                indoorBuildingSource.setGeoJson(loadJsonFromAsset("white_house_lvl_0.geojson"));
+                map.setStyleUrl("mapbox://styles/maper/cizfl4jyx007m2sji1ndyc4nl");
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(new LatLng(39.947635, 116.420298))
+                        .zoom(19.5)
+                        .build();
+                map.setCameraPosition(cameraPosition);
             }
         });
     }
@@ -390,6 +445,17 @@ public class MapBoxActivity extends Activity {
         super.onResume();
         mapView.onResume();
     }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mapView.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mapView.onStop();
+    }
 
     @Override
     public void onPause() {
@@ -413,5 +479,53 @@ public class MapBoxActivity extends Activity {
     public void onLowMemory() {
         super.onLowMemory();
         mapView.onLowMemory();
+    }
+
+    private void loadBuildingLayer() {
+        // Method used to load the indoor layer on the map. First the fill layer is drawn and then the
+        // line layer is added.
+
+        FillLayer indoorBuildingLayer = new FillLayer("indoor-building-fill", "indoor-building").withProperties(
+                fillColor(Color.parseColor("#eeeeee")),
+                // Function.zoom is used here to fade out the indoor layer if zoom level is beyond 16. Only
+                // necessary to show the indoor map at high zoom levels.
+                fillOpacity(Function.zoom(Stops.exponential(
+                        Stop.stop(17f, fillOpacity(1f)),
+                        Stop.stop(16.5f, fillOpacity(0.5f)),
+                        Stop.stop(16f, fillOpacity(0f))
+                )))
+
+        );
+
+        map.addLayer(indoorBuildingLayer);
+
+        LineLayer indoorBuildingLineLayer = new LineLayer("indoor-building-line", "indoor-building").withProperties(
+                lineColor(Color.parseColor("#50667f")),
+                lineWidth(0.5f),
+                fillOpacity(Function.zoom(Stops.exponential(
+                        Stop.stop(17f, fillOpacity(1f)),
+                        Stop.stop(16.5f, fillOpacity(0.5f)),
+                        Stop.stop(16f, fillOpacity(0f))
+                )))
+
+        );
+        map.addLayer(indoorBuildingLineLayer);
+    }
+
+    private String loadJsonFromAsset(String filename) {
+        // Using this method to load in GeoJSON files from the assets folder.
+
+        try {
+            InputStream is = getAssets().open(filename);
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+            return new String(buffer, "UTF-8");
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+            return null;
+        }
     }
 }

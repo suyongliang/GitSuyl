@@ -213,11 +213,11 @@ public class MainActivity extends AppCompatActivity {
         iv_address.setImageResource(R.drawable.tab_address_normal);
         iv_friend.setImageResource(R.drawable.tab_find_frd_normal);
         iv_setting.setImageResource(R.drawable.tab_settings_normal);
-        // TextView置为白色
-        tv_home.setTextColor(000000);
-        tv_address.setTextColor(000000);
-        tv_friend.setTextColor(000000);
-        tv_setting.setTextColor(000000);
+        // TextView置为灰色
+        tv_home.setTextColor(808080);
+        tv_address.setTextColor(808080);
+        tv_friend.setTextColor(808080);
+        tv_setting.setTextColor(808080);
     }
 
     public void onClickButton(View v) {
@@ -229,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
                 iv_home.setImageResource(R.drawable.tab_weixin_pressed);
                 tv_home.setTextColor(0xff1B940A);
                 Intent intent = new Intent();
-                intent.setClass(MainActivity.this,MainActivity2.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
+                intent.setClass(MainActivity.this,MapBoxActivity.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
                 startActivity(intent);
                 setTitle("导航");
                 break;

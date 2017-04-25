@@ -34,7 +34,8 @@ android {
 }
 
 repositories {
-    mavenCentral()
+    maven { url "https://jitpack.io" }
+    maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
 }
 
 dependencies {
@@ -44,6 +45,7 @@ dependencies {
     })
     compile 'com.android.support:appcompat-v7:25.3.0'
     compile 'com.android.support:design:25.3.0'
+//    compile "com.android.support:recyclerview-v7:25.1.1"
     testCompile 'junit:junit:4.12'
     //compile 'com.esri.arcgis.android:arcgis-android:10.2.9'
 //    compile files('libs/arcgis-android-api.jar')
@@ -51,16 +53,23 @@ dependencies {
     compile('com.mapbox.mapboxsdk:mapbox-android-sdk:5.0.0@aar') {
         transitive = true
     }
-//    compile('com.mapbox.mapboxsdk:mapbox-android-services:2.0.0@aar') {
-//        transitive = true
-//    }
+    compile('com.mapbox.mapboxsdk:mapbox-android-services:2.0.0@aar') {
+        transitive = true
+    }
     // Mapbox Android UI
     compile('com.mapbox.mapboxsdk:mapbox-android-ui:2.0.0@aar') {
         transitive = true
     }
-    compile 'com.google.code.gson:gson:2.6.2'
-    compile 'com.squareup.retrofit2:retrofit:2.1.0'
-    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+
+    compile 'com.getbase:floatingactionbutton:1.10.1'
+//    compile 'com.squareup.picasso:picasso:2.5.2'
+
+    // firebase crash report
+//    compile 'com.google.firebase:firebase-crash:10.0.1'
+
+//    compile 'com.google.code.gson:gson:2.6.2'
+//    compile 'com.squareup.retrofit2:retrofit:2.1.0'
+//    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
 
     compile('net.sf.json-lib:json-lib:2.4:jdk15') {
         transitive = true

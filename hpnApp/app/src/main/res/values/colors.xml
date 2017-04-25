@@ -169,4 +169,8 @@
     <color name="mapboxMustard">#FBB03B</color>
     <color name="mapboxNavy">#28353D</color>
     <color name="mapboxNavyDark">#222B30</color>
+
+    <!-- 描边颜色 -->
+    <color name="border_clo">#ccc</color>
+    <color name="text_clo">#333</color>
 </resources>
