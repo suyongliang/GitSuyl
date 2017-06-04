@@ -156,6 +156,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
             @Override
             public void onMapReady(MapboxMap mapboxMap) {
                 map = mapboxMap;
+                map.setMaxZoomPreference(20.00);
                 longclick(map);
                 for (Marker maker : map.getMarkers()) {
                     map.removeMarker(maker);
