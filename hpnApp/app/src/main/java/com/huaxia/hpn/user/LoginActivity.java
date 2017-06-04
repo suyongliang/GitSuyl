@@ -40,6 +40,8 @@ import com.huaxia.hpn.utils.AppUtils;
 import com.huaxia.hpn.utils.HttpUtils;
 import com.huaxia.hpn.utils.IpMacUtils;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -378,7 +380,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             } else {
 //                mPasswordView.setError(getString(R.string.error_incorrect_password));
                 net.sf.json.JSONObject resultJson = net.sf.json.JSONObject.fromObject(result);
-                Toast.makeText(getApplicationContext(), resultJson.get("msg").toString(), Toast.LENGTH_LONG).show();
+                if(StringUtils.isNotEmpty((String)resultJson.get("msg"))){
+                    Toast.makeText(getApplicationContext(), resultJson.get("msg").toString(), Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(getApplicationContext(), "登录失败！", Toast.LENGTH_LONG).show();
+                }
+
                 mPasswordView.requestFocus();
             }
         }

@@ -8,10 +8,61 @@
     android:orientation="vertical"
     tools:context="com.huaxia.hpn.hpnapp.PhotoGuideActivity">
 
-    <ImageView
-        android:id="@+id/imageView1"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-         />
+    <LinearLayout style="@style/wrap_layout"
+        android:layout_width="fill_parent"
+        android:background="@color/gray"
+        android:gravity="center_vertical"
+        android:layout_weight="3"
+        android:orientation="vertical" >
+        <ImageView
+            android:id="@+id/imageVPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+        <TextView
+            android:id="@+id/textVPhoto"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:layout_below="@id/imageView2"/>
+    </LinearLayout>
+    <LinearLayout style="@style/wrap_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        android:layout_weight="1"
+        android:orientation="vertical" >
+        <View style="@style/bg_line"/>
+        <LinearLayout style="@style/top_layout">
+            <TextView
+                android:id="@+id/ph_imageGuide"
+                android:layout_width="wrap_content"
+                style="@style/usertext"
+                android:text="图片导览"
+                android:clickable="true"
+                android:onClick="tvClickListener"/>
+        </LinearLayout>
+        <View style="@style/bg_line"/>
+        <LinearLayout style="@style/mid_layout">
+            <TextView
+                android:id="@+id/ph_richScan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/usertext"
+                android:text="扫一扫"
+                android:clickable="true"
+                android:onClick="tvClickListener"/>
+        </LinearLayout>
+        <View style="@style/bg_line"/>
+        <LinearLayout style="@style/bottom_layout">
+            <TextView
+                android:id="@+id/ph_codeSearch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                style="@style/usertext"
+                android:text="编码输入"
+                android:clickable="true"
+                android:onClick="tvClickListener"/>
+        </LinearLayout>
+    </LinearLayout>
 
 </LinearLayout>

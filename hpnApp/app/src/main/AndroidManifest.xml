@@ -36,12 +36,36 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity" />
-        <activity android:name=".MainActivity2" />
-        <activity android:name=".PhotoGuideActivity" />
-        <activity android:name=".PhotoActivity" />
-        <activity android:name=".PopupActivity" />
-        <activity android:name=".MapBoxActivity" />
+        <activity
+            android:name=".MainActivity"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
+            android:name=".MainActivity2"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
+            android:name=".PhotoGuideActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
+            android:name=".PhotoActivity"
+            android:label="@string/photo_name"
+            android:launchMode="singleTop"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.huaxia.hpn.hpnapp.MainActivity" />
+        </activity>
+        <activity
+            android:name=".PopupActivity"
+            android:parentActivityName=".PhotoActivity"
+            android:theme="@style/AppTheme">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.huaxia.hpn.hpnapp.PhotoActivity" />
+        </activity>
+        <activity
+            android:name=".MapBoxActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <service android:name="com.mapbox.services.android.telemetry.service.TelemetryService" />
         <service android:name="ips.casm.com.service.MIPSService">
@@ -59,7 +83,16 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
             android:name="com.huaxia.hpn.user.MyDetInfoActivity"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
+            android:name=".PhotoDetailActivity"
+            android:launchMode="singleTop"
+            android:label="@string/guide_name"
+            android:parentActivityName=".MapBoxActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.huaxia.hpn.hpnapp.MapBoxActivity" />
+        </activity>
     </application>
 
 </manifest>

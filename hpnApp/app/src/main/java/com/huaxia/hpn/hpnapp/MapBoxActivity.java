@@ -1,6 +1,7 @@
 package com.huaxia.hpn.hpnapp;
 
-import android.Manifest;
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -10,11 +11,12 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
@@ -22,7 +24,12 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.esri.core.geometry.Point;
-import com.esri.core.geometry.SpatialReference;
+import com.huaxia.hpn.headerview.MyToolBar;
+import com.huaxia.hpn.utils.AppUtils;
+import com.huaxia.hpn.utils.HttpUtils;
+import com.huaxia.hpn.utils.IpMacUtils;
+import com.huaxia.hpn.utils.SocketUtil;
+import com.huaxia.hpn.utils.TCPClient;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
@@ -38,11 +45,15 @@ import com.mapbox.mapboxsdk.style.functions.Function;
 import com.mapbox.mapboxsdk.style.functions.stops.Stop;
 import com.mapbox.mapboxsdk.style.functions.stops.Stops;
 import com.mapbox.mapboxsdk.style.layers.FillLayer;
+import com.mapbox.mapboxsdk.style.layers.Layer;
 import com.mapbox.mapboxsdk.style.layers.LineLayer;
+import com.mapbox.mapboxsdk.style.layers.Property;
+import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 import com.mapbox.services.Constants;
 import com.mapbox.services.android.telemetry.location.LocationEngine;
 import com.mapbox.services.android.telemetry.location.LocationEngineListener;
+import com.mapbox.services.android.telemetry.permissions.PermissionsListener;
 import com.mapbox.services.android.telemetry.permissions.PermissionsManager;
 import com.mapbox.services.android.ui.geocoder.GeocoderAutoCompleteView;
 import com.mapbox.services.api.ServicesException;
@@ -50,18 +61,20 @@ import com.mapbox.services.api.directions.v5.DirectionsCriteria;
 import com.mapbox.services.api.directions.v5.MapboxDirections;
 import com.mapbox.services.api.directions.v5.models.DirectionsResponse;
 import com.mapbox.services.api.directions.v5.models.DirectionsRoute;
-import com.mapbox.services.api.geocoding.v5.GeocodingCriteria;
-import com.mapbox.services.api.geocoding.v5.models.CarmenFeature;
 import com.mapbox.services.commons.geojson.LineString;
 import com.mapbox.services.commons.models.Position;
-import com.mapzen.android.lost.api.LocationServices;
+
+import net.sf.json.JSON;
+import net.sf.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import ips.casm.com.radiomap.MPoint;
 import ips.casm.com.util.iMessage;
@@ -69,26 +82,32 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static com.mapbox.mapboxsdk.style.layers.Property.VISIBLE;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillOpacity;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.lineWidth;
+import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
+import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.visibility;
+import static java.lang.Thread.sleep;
 
-public class MapBoxActivity extends Activity {
+public class MapBoxActivity extends Activity implements PermissionsListener {
     private static final String TAG = "Activity";
     private static final int PERMISSIONS_LOCATION = 0;
     private MapView mapView;
     private MapboxMap map;
-    private FloatingActionButton floatingActionButton;
+    private FloatingActionButton floatingActionButton;// 定位按钮
+    private FloatingActionButton floatingActionGuideButton;// 导览按钮
     private LocationEngine locationEngine;
     private LocationEngineListener locationEngineListener;
+    private PermissionsManager permissionsManager;
     private DirectionsRoute currentRoute;
     private Point mPoint;
     private Intent startIpsServiceIntent;
-    private String rmFilePathStr=null;
+    private String rmFilePathStr = null;
     private BroadcastReceiver mIPSPointReceiver;
     private IntentFilter ipsPointRecerverIntentFilter;
-//    private PictureMarkerSymbol mPointMarkerSymbol;
+    //    private PictureMarkerSymbol mPointMarkerSymbol;
 //    private GraphicsLayer graphicsLayer = null;
 //    private Drawable maker_img_locate,newmarker;//定位指向标志
     private Map pointMap = new HashMap();
@@ -96,7 +115,21 @@ public class MapBoxActivity extends Activity {
     private String result;
 
     private View levelButtons;
-    private GeoJsonSource indoorBuildingSource;
+    private GeoJsonSource indoorRouteSource;
+
+    private MyToolBar myToolBar;// 自定义toolbar
+
+    /**
+     * Keep track of the login task to ensure we can cancel it if requested.
+     */
+    private MapBoxActivity.SendPointAndAzimuthTask mSendTask = null;
+
+    // 导览flg
+    private boolean guideFlg;
+    // 定位flg
+    private boolean locationFlg;
+
+    private ValueAnimator hotelColorAnimator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,13 +137,19 @@ public class MapBoxActivity extends Activity {
 //        MapboxAccountManager.start(this, getString(R.string.access_Token));
         Mapbox.getInstance(this, getString(R.string.access_Token));
         setContentView(R.layout.activity_mapbox);
+        // 初始化视图
+        initView();
+        // 初始化数据
+        initData();
+        // 事件监听
+        initListener();
 //        locationServices = LocationServices.getLocationServices(MapBoxActivity.this);
-
         // Get the location engine object for later use.
         locationEngine = LocationSource.getLocationEngine(this);
+        locationEngine.activate();
 
         // Set up the MapView
-        mapView = (MapView) findViewById(R.id.mapView);
+        mapView = (MapView) findViewById(R.id.mapIndoorView);
         mapView.onCreate(savedInstanceState);
 
         mapView.getMapAsync(new OnMapReadyCallback() {
@@ -118,26 +157,75 @@ public class MapBoxActivity extends Activity {
             public void onMapReady(MapboxMap mapboxMap) {
                 map = mapboxMap;
                 longclick(map);
-//                mapboxMap.addMarker(new MarkerOptions()
-//                        .position(new LatLng(112.520855, -0.008069))
-//                        .title("Hello World!")
-//                        .snippet("Welcome to my marker."));
-                for(Marker maker : map.getMarkers()){
+                for (Marker maker : map.getMarkers()) {
                     map.removeMarker(maker);
                 }
-                map.addMarker(new MarkerOptions().position(new LatLng(-0.008069, 112.520855)));
+//                map.addMarker(new MarkerOptions().position(new LatLng(39.947635, 116.420298)));
 
+                // 楼层按钮
                 levelButtons = findViewById(R.id.floor_level_buttons);
                 AlphaAnimation animation = new AlphaAnimation(0.0f, 1.0f);
                 animation.setDuration(500);
                 levelButtons.startAnimation(animation);
                 levelButtons.setVisibility(View.VISIBLE);
 
-//                indoorBuildingSource = new GeoJsonSource("indoor-building", loadJsonFromAsset("routes.geojson"));
-//                mapboxMap.addSource(indoorBuildingSource);
+                indoorRouteSource = new GeoJsonSource("indoor-building", loadJsonFromAsset("routes.geojson"));
+                mapboxMap.addSource(indoorRouteSource);
 //
 //                // Add the building layers since we know zoom levels in range
-//                loadBuildingLayer();
+                loadBuildingLayer();
+                Point point = (Point)pointMap.get("Point");
+                if (point != null){
+                    mapboxMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(point.getY(), point.getX()))
+                            .title("Hello World!")
+                            .snippet("Welcome to my marker."));
+                } else {
+                    mapboxMap.addMarker(new MarkerOptions()
+                            .position(new LatLng(39.947635, 116.420298))
+                            .title("Hello World!")
+                            .snippet("Welcome to my marker."));
+                }
+//                setLayerVisible("indoor-building");
+                // Add the hotels source to the map
+                GeoJsonSource hotelSource = new GeoJsonSource("hotels", loadJsonFromAsset("la_hotels.geojson"));
+                mapboxMap.addSource(hotelSource);
+
+                FillLayer hotelLayer = new FillLayer("hotels", "hotels").withProperties(
+                        fillColor(Color.parseColor("#5a9fcf")),
+                        PropertyFactory.visibility(Property.NONE)
+                );
+
+                mapboxMap.addLayer(hotelLayer);
+
+                final FillLayer hotels = (FillLayer) mapboxMap.getLayer("hotels");
+
+                hotelColorAnimator = ValueAnimator.ofObject(
+                        new ArgbEvaluator(),
+                        Color.parseColor("#5a9fcf"), // Brighter shade
+                        Color.parseColor("#2C6B97") // Darker shade
+                );
+                hotelColorAnimator.setDuration(1000);
+                hotelColorAnimator.setRepeatCount(ValueAnimator.INFINITE);
+                hotelColorAnimator.setRepeatMode(ValueAnimator.REVERSE);
+                hotelColorAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator animator) {
+
+                        hotels.setProperties(
+                                fillColor((int) animator.getAnimatedValue())
+                        );
+                    }
+
+                });
+                com.getbase.floatingactionbutton.FloatingActionButton toggleHotelsFab = (com.getbase.floatingactionbutton.FloatingActionButton) findViewById(R.id.fab_toggle_hotels);
+                toggleHotelsFab.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        setLayerVisible("hotels");
+                    }
+                });
             }
         });
 
@@ -151,6 +239,18 @@ public class MapBoxActivity extends Activity {
             public void onClick(View view) {
                 if (map != null) {
                     toggleGps(!map.isMyLocationEnabled());
+                }
+            }
+        });
+
+        //导览
+        floatingActionGuideButton = (FloatingActionButton) findViewById(R.id.location_guide_fab);
+        floatingActionGuideButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (map != null) {
+                    // 发送当前位置和方位角给后台
+                    sendPointAndAzimuth();
                 }
             }
         });
@@ -171,12 +271,13 @@ public class MapBoxActivity extends Activity {
             @Override
             public void onClick(View view) {
 //                indoorBuildingSource.setGeoJson(loadJsonFromAsset("white_house_lvl_1.geojson"));
+                map.setStyleUrl("mapbox://styles/maper/ciwvpz28c002z2qpqxdg2m5cy");
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(new LatLng(-0.008069, 112.520855))
                         .zoom(10)
                         .build();
-                map.setStyleUrl("mapbox://styles/maper/ciwvpz28c002z2qpqxdg2m5cy");
                 map.setCameraPosition(cameraPosition);
+                // Customize Map with markers, polylines, etc.
             }
         });
 
@@ -186,11 +287,21 @@ public class MapBoxActivity extends Activity {
             public void onClick(View view) {
 //                indoorBuildingSource.setGeoJson(loadJsonFromAsset("white_house_lvl_0.geojson"));
                 map.setStyleUrl("mapbox://styles/maper/cizfl4jyx007m2sji1ndyc4nl");
+                // Customize Map with markers, polylines, etc.
                 CameraPosition cameraPosition = new CameraPosition.Builder()
                         .target(new LatLng(39.947635, 116.420298))
-                        .zoom(19.5)
+                        .zoom(20.5)
                         .build();
                 map.setCameraPosition(cameraPosition);
+//                // Add the building layers since we know zoom levels in range
+//                indoorRouteSource.setGeoJson(loadJsonFromAsset("routes.geojson"));
+                map.getLayers();
+                map.removeLayer("indoor-building-fill");
+                map.removeLayer("indoor-building-line");
+//                setLayerVisible("indoor-building-fill");
+//                setLayerVisible("indoor-building-line");
+                loadBuildingLayer();
+
             }
         });
     }
@@ -218,7 +329,9 @@ public class MapBoxActivity extends Activity {
                 mapboxMap.removeAnnotations();
 
                 // Set the origin waypoint to the devices location设置初始位置
-                Position origin = Position.fromCoordinates(mapboxMap.getMyLocation().getLongitude(), mapboxMap.getMyLocation().getLatitude());
+//                Position origin = Position.fromCoordinates(mapboxMap.getMyLocation().getLongitude(), mapboxMap.getMyLocation().getLatitude());
+                Point pointBegin = (Point)pointMap.get("Point");
+                Position origin = Position.fromCoordinates(pointBegin.getY(), pointBegin.getX());
 
                 // 设置目的地路径--点击的位置点
                 Position destination = Position.fromCoordinates(point.getLongitude(), point.getLatitude());
@@ -239,7 +352,7 @@ public class MapBoxActivity extends Activity {
         });
     }
 
-    private void getRoute(Position origin, Position destination) throws ServicesException{
+    private void getRoute(Position origin, Position destination) throws ServicesException {
         MapboxDirections directions = new MapboxDirections.Builder()
                 .setAccessToken(getString(R.string.access_Token))
                 .setOrigin(origin)
@@ -302,14 +415,18 @@ public class MapBoxActivity extends Activity {
     private void toggleGps(boolean enableGps) {
         if (enableGps) {
             // Check if user has granted location permission
+            permissionsManager = new PermissionsManager(this);
             if (!PermissionsManager.areLocationPermissionsGranted(this)) {
-                ActivityCompat.requestPermissions(this, new String[] {
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                        Manifest.permission.ACCESS_FINE_LOCATION}, PERMISSIONS_LOCATION);
+                permissionsManager.requestLocationPermissions(this);
             } else {
                 enableLocation(true);
+                locationFlg = true;
             }
         } else {
+            locationFlg = false;
+            for (Marker maker : map.getMarkers()) {
+                map.removeMarker(maker);
+            }
             enableLocation(false);
         }
     }
@@ -319,13 +436,15 @@ public class MapBoxActivity extends Activity {
             // If we have the last location of the user, we can move the camera to that position.
             Location lastLocation = locationEngine.getLastLocation();
             if (lastLocation != null) {
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLocation), 16));
+//                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLocation), 16));
+                Point point = (Point)pointMap.get("Point");
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
             }
 
             locationEngineListener = new LocationEngineListener() {
                 @Override
                 public void onConnected() {
-                    locationEngine.requestLocationUpdates();
+//                    locationEngine.requestLocationUpdates();
                 }
 
                 @Override
@@ -335,7 +454,9 @@ public class MapBoxActivity extends Activity {
                         // listener so the camera isn't constantly updating when the user location
                         // changes. When the user disables and then enables the location again, this
                         // listener is registered again and will adjust the camera once again.
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 16));
+//                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 16));
+                        Point point = (Point)pointMap.get("Point");
+                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
                         locationEngine.removeLocationEngineListener(this);
                     }
                 }
@@ -349,37 +470,59 @@ public class MapBoxActivity extends Activity {
         map.setMyLocationEnabled(enabled);
     }
 
-    private void getPointAndAzimuth(){
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        permissionsManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
+    public void onExplanationNeeded(List<String> permissionsToExplain) {
+        Toast.makeText(this, "This app needs location permissions in order to show its functionality.",
+                Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onPermissionResult(boolean granted) {
+        if (granted) {
+            enableLocation(true);
+        } else {
+            Toast.makeText(this, "You didn't grant location permissions.",
+                    Toast.LENGTH_LONG).show();
+            finish();
+        }
+    }
+
+    private void getPointAndAzimuth() {
         //取得指纹数据
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            String SystemDirPath=Environment.getExternalStorageDirectory().toString();
-            String IPSFolderPath=SystemDirPath+ File.separator+"IndoorPositionSystem";
-            String RadioMapPath=IPSFolderPath+File.separator+"RadioMap";
-            String rmfilePath=RadioMapPath+File.separator+"Dice_Radio_Map.txt";
+            String SystemDirPath = Environment.getExternalStorageDirectory().toString();
+            String IPSFolderPath = SystemDirPath + File.separator + "IndoorPositionSystem";
+            String RadioMapPath = IPSFolderPath + File.separator + "RadioMap";
+            String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map.txt";
             //魅族手机获取的是相对路径。
-            File rmFile=new File(rmfilePath);
+            File rmFile = new File(rmfilePath);
             if (!rmFile.exists()) {
                 Toast.makeText(MapBoxActivity.this, "没有找到该指纹库文件", Toast.LENGTH_SHORT).show();
                 finish();
-            }else {
-                rmFilePathStr=rmfilePath;
-                Log.i("IPS_DCActivity","获得的文件路径为："+rmfilePath);
+            } else {
+                rmFilePathStr = rmfilePath;
+                Log.i("IPS_DCActivity", "获得的文件路径为：" + rmfilePath);
             }
         }
-        startIpsServiceIntent=new Intent(MapBoxActivity.this,ips.casm.com.service.MIPSService.class);
-        Bundle ipsServiceBundle=new Bundle();
+        startIpsServiceIntent = new Intent(MapBoxActivity.this, ips.casm.com.service.MIPSService.class);
+        Bundle ipsServiceBundle = new Bundle();
         ipsServiceBundle.putString(iMessage.IN_FILE_PATH, rmFilePathStr);
         startIpsServiceIntent.putExtras(ipsServiceBundle);
 //        startIpsServiceIntent.putExtra(iMessage.IN_FILE_PATH, rmFilePathStr);
         bindService(startIpsServiceIntent, this.ipsServiceConnection, Context.BIND_AUTO_CREATE);
 
-        mIPSPointReceiver=new IPSPointReceiver();
-        ipsPointRecerverIntentFilter=new IntentFilter(iMessage.sendIPSPoint2ActivityBroadcastActionIntent);
-        registerReceiver(mIPSPointReceiver,ipsPointRecerverIntentFilter);
+        mIPSPointReceiver = new IPSPointReceiver();
+        ipsPointRecerverIntentFilter = new IntentFilter(iMessage.sendIPSPoint2ActivityBroadcastActionIntent);
+        registerReceiver(mIPSPointReceiver, ipsPointRecerverIntentFilter);
     }
 
 
-    private ServiceConnection ipsServiceConnection=new ServiceConnection(){
+    private ServiceConnection ipsServiceConnection = new ServiceConnection() {
         /**
          * 获取service调用
          */
@@ -402,7 +545,7 @@ public class MapBoxActivity extends Activity {
             MPoint point_Plane = (MPoint) intent.getExtras().get(iMessage.sendIPSPoint2ActivityBroadcastActionKey);
 
             //创建geometry
-            final Point point=new Point(point_Plane.x, point_Plane.y);
+            final Point point = new Point(point_Plane.x, point_Plane.y);
 
             Log.i("IPSPointReceiver", point_Plane.toString());
 //			//创建投影坐标系的空间参考
@@ -411,11 +554,25 @@ public class MapBoxActivity extends Activity {
 //			SpatialReference cgcs2000Geodetic=mMapView.getSpatialReference();
             //投影反算,获得点位信息
 //            mPoint=(Point) GeometryEngine.project(point, cgcs2000NoneZone, cgcs2000Geodetic);
-            Log.i("IPSPointReceiver", "投影后坐标为："+point_Plane.x+","+point_Plane.y);
+            Log.i("IPSPointReceiver", "投影后坐标为：" + point_Plane.x + "," + point_Plane.y);
             //获得azimuth
-            float azimuth=point_Plane.getAzimuth();
+            float azimuth = point_Plane.getAzimuth();
+//            Point point2 = new Point(116.420298, 39.947635);
             pointMap.put("Point", point);
+//            pointMap.put("Point", point2);
             pointMap.put("Azimuth", azimuth);
+
+            if (point != null && map != null && locationFlg){
+                for (Marker maker : map.getMarkers()) {
+                    map.removeMarker(maker);
+                }
+                map.addMarker(new MarkerOptions()
+                        .position(new LatLng(point.getY(), point.getX()))
+                        .title("我的位置!")
+                        .snippet("Welcome to my marker."));
+//                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
+            }
+//            sendPoint();
 
             Log.i("pointMap", pointMap.toString());
         }
@@ -427,13 +584,13 @@ public class MapBoxActivity extends Activity {
         if (locationEngineListener != null) {
             locationEngine.removeLocationEngineListener(locationEngineListener);
         }
-        if (mapView!=null) {
+        if (mapView != null) {
             mapView.onDestroy();
         }
-        if (startIpsServiceIntent!=null) {
+        if (startIpsServiceIntent != null) {
             stopService(startIpsServiceIntent);
         }
-        if (mIPSPointReceiver!=null) {
+        if (mIPSPointReceiver != null) {
             unregisterReceiver(mIPSPointReceiver);
         }
         System.gc();
@@ -445,6 +602,7 @@ public class MapBoxActivity extends Activity {
         super.onResume();
         mapView.onResume();
     }
+
     @Override
     protected void onStart() {
         super.onStart();
@@ -487,6 +645,7 @@ public class MapBoxActivity extends Activity {
 
         FillLayer indoorBuildingLayer = new FillLayer("indoor-building-fill", "indoor-building").withProperties(
                 fillColor(Color.parseColor("#eeeeee")),
+                visibility(VISIBLE),
                 // Function.zoom is used here to fade out the indoor layer if zoom level is beyond 16. Only
                 // necessary to show the indoor map at high zoom levels.
                 fillOpacity(Function.zoom(Stops.exponential(
@@ -502,6 +661,7 @@ public class MapBoxActivity extends Activity {
         LineLayer indoorBuildingLineLayer = new LineLayer("indoor-building-line", "indoor-building").withProperties(
                 lineColor(Color.parseColor("#50667f")),
                 lineWidth(0.5f),
+                visibility(VISIBLE),
                 fillOpacity(Function.zoom(Stops.exponential(
                         Stop.stop(17f, fillOpacity(1f)),
                         Stop.stop(16.5f, fillOpacity(0.5f)),
@@ -528,4 +688,189 @@ public class MapBoxActivity extends Activity {
             return null;
         }
     }
+
+    private void setLayerVisible(String layerId) {
+        Layer layer = map.getLayer(layerId);
+        if (layer == null) {
+            return;
+        }
+        if (VISIBLE.equals(layer.getVisibility().getValue())) {
+            layer.setProperties(visibility(NONE));
+        } else {
+            layer.setProperties(visibility(VISIBLE));
+        }
+    }
+
+    /*
+     * 初始化视图
+     */
+    private void initView() {
+        myToolBar = (MyToolBar) findViewById(R.id.myToolBar);
+        myToolBar.setLeftBtnText("返回");
+        myToolBar.setRightBtnText("");
+        myToolBar.setTvTitle("注册");
+    }
+
+    /*
+     * 初始化数据
+     */
+    private void initData() {
+        // 设置左边右边的按钮是否显示
+        myToolBar.setToolBarBtnVisiable(true, false);
+        // 设置是否显示中间标题，默认的是显示
+        myToolBar.setToolBarTitleVisible(true);
+    }
+
+    /*
+     * 事件监听
+     */
+    private void initListener() {
+        /*
+         * toolbar的点击事件处理
+         */
+        myToolBar.setOnMyToolBarClickListener(new MyToolBar.MyToolBarClickListener() {
+
+            @Override
+            public void rightBtnClick() {// 右边按钮点击事件
+                Toast.makeText(MapBoxActivity.this, "注册", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void leftBtnClick() {// 左边按钮点击事件
+                Toast.makeText(MapBoxActivity.this, "返回", Toast.LENGTH_SHORT).show();
+                MapBoxActivity.this.finish();
+            }
+        });
+    }
+
+
+    //  发送当前位置和方位角给后台
+    private void sendPointAndAzimuth(){
+        String result = null;
+        if(!guideFlg){
+            guideFlg = true;
+            //floatingActionGuideButton.setImageResource(R.drawable.ic_location_disabled_24dp);
+            floatingActionGuideButton.setBackgroundColor(Color.parseColor("#FFFF00"));
+        } else {
+            guideFlg = false;
+            //floatingActionGuideButton.setImageResource(R.drawable.map_guide);
+            floatingActionGuideButton.setBackgroundColor(Color.parseColor("#FF4081"));
+        }
+        try {
+            Properties properties = AppUtils.getProperties(getApplicationContext());
+            String RequestURL=properties.getProperty("sendPointAndAzimuthUrl");
+            Log.i(TAG, "请求的URL=" + RequestURL);
+
+            // 得到手机Mac
+            String macCode = IpMacUtils.getMacFromWifi();
+            // 定位point和方位角
+            Point point = (Point)pointMap.get("Point");
+            float azimuth = (float)pointMap.get("Azimuth");
+
+            mSendTask = new MapBoxActivity.SendPointAndAzimuthTask(RequestURL, pointMap);
+            mSendTask.execute((String) null);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * SendPointAndAzimuthTask
+     * 发送当前位置和方位角给后台的异步执行Class
+     */
+    public class SendPointAndAzimuthTask extends AsyncTask<String, Void, Boolean> {
+
+        private String sRequestURL;
+        private Map sPointMap;
+        private String result;
+
+        SendPointAndAzimuthTask(String RequestURL, Map pointMap) {
+            sRequestURL = RequestURL;
+            sPointMap = pointMap;
+        }
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            // TODO: attempt authentication against a network service.
+
+            try {
+                // Simulate network access.
+                // 得到手机Mac
+                String macCode = IpMacUtils.getMacFromWifi();
+                // 定位point和方位角
+                Point point = (Point)pointMap.get("Point");
+                float azimuth = (float)pointMap.get("Azimuth");
+
+                net.sf.json.JSONObject reParams = new net.sf.json.JSONObject();
+                reParams.put("macCode", macCode);
+                reParams.put("latitude", point.getY());
+                reParams.put("longitude", point.getX());
+                reParams.put("azimuth", azimuth);
+                reParams.put("operater", "app");
+//                client.setConnectTimeout(10000);
+                result = HttpUtils.doPost(sRequestURL,reParams.toString());
+                net.sf.json.JSONObject resultJson = net.sf.json.JSONObject.fromObject(result);
+                if(resultJson.size() == 0){
+                    return false;
+                } else if(resultJson.get("collectionses") != null){
+                    Intent intent = new Intent(MapBoxActivity.this, PhotoDetailActivity.class);
+                    /* 通过Bundle对象存储需要传递的数据 */
+                    Bundle bundle = new Bundle();
+                    bundle.putString("image", resultJson.get("collectionses").toString());
+                    intent.putExtras(bundle);
+                    startActivity(intent);
+                }
+
+            } catch (Exception e) {
+                return false;
+            }
+
+            // TODO: register the new account here.
+            return true;
+        }
+
+        @Override
+        protected void onPostExecute(final Boolean success) {
+            mSendTask = null;
+
+            if (success) {
+                Toast.makeText(getApplicationContext(), "发送经纬度和方位角成功!", Toast.LENGTH_SHORT).show();
+                //finish();
+            } else {
+//                mPasswordView.setError(getString(R.string.error_incorrect_password));
+                net.sf.json.JSONObject resultJson = net.sf.json.JSONObject.fromObject(result);
+                Toast.makeText(getApplicationContext(), resultJson.get("msg").toString(), Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            mSendTask = null;
+        }
+    }
+
+    private void sendPoint(){
+        try{
+            String macCode = IpMacUtils.getMacFromWifi();
+            // 定位point和方位角
+            Point point = (Point)pointMap.get("Point");
+            float azimuth = (float)pointMap.get("Azimuth");
+
+            net.sf.json.JSONObject reParams = new net.sf.json.JSONObject();
+            reParams.put("macCode", macCode);
+            reParams.put("latitude", point.getY());
+            reParams.put("longitude", point.getX());
+            reParams.put("azimuth", azimuth);
+            reParams.put("operater", "app");
+            SocketUtil socketUtil = new SocketUtil("192.168.1.103", 60301, reParams.toString());
+
+            new Thread(socketUtil).start();
+            sleep(3000);
+//            socketUtil.writeBuf("123456".getBytes());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
 }

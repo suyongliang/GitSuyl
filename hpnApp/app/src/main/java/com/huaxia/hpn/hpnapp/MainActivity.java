@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
@@ -17,6 +18,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.huaxia.hpn.headerview.GuidePageAdapter;
 import com.huaxia.hpn.user.LoginActivity;
@@ -24,10 +26,13 @@ import com.huaxia.hpn.user.MyDetInfoActivity;
 import com.huaxia.hpn.utils.AppUtils;
 import com.huaxia.hpn.utils.HttpUtils;
 import com.huaxia.hpn.utils.ImageUtils;
+import com.huaxia.hpn.utils.NetUtils;
+import com.mapbox.mapboxsdk.Mapbox;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +65,12 @@ public class MainActivity extends AppCompatActivity {
 
     // ViewPager适配器ContentAdapter
     private GuidePageAdapter adapter;
+
+    // 拍照导览
+    private TextView tv_imageGuide;
+    private TextView tv_richScan;
+    private TextView tv_codeSearch;
+
     // 我的按钮
     private TextView tv_login;
     private TextView tv_my_footmark;
@@ -81,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+        Mapbox.getInstance(this, getString(R.string.access_Token));
         setContentView(R.layout.activity_main);
         //创建属于主线程的handler
         uiHandler=new Handler();
@@ -88,6 +100,12 @@ public class MainActivity extends AppCompatActivity {
         initView();
         // 初始化底部按钮事件
         initEvent();
+
+        // 判断是否是wifi打开
+        if(!NetUtils.isWifi(getApplicationContext())){
+            NetUtils.openSetting(MainActivity.this);
+            Toast.makeText(MainActivity.this, "未连接WIFI，导航导览功能将无法使用！", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void initEvent() {
@@ -190,6 +208,14 @@ public class MainActivity extends AppCompatActivity {
         this.adapter = new GuidePageAdapter(views);
         viewPager.setAdapter(adapter);
 
+        // 导览页面
+
+
+        // 拍照导览页面
+        tv_imageGuide = (TextView) page_02.findViewById(R.id.ph_imageGuide);
+        tv_richScan = (TextView) page_02.findViewById(R.id.ph_richScan);
+        tv_codeSearch = (TextView) page_02.findViewById(R.id.ph_codeSearch);
+
         // 我的页面按钮注册
         ll_layout_login = (LinearLayout) findViewById(R.id.layout_login);
 //        tv_login = (TextView) findViewById(R.id.user_login);
@@ -214,10 +240,10 @@ public class MainActivity extends AppCompatActivity {
         iv_friend.setImageResource(R.drawable.tab_find_frd_normal);
         iv_setting.setImageResource(R.drawable.tab_settings_normal);
         // TextView置为灰色
-        tv_home.setTextColor(808080);
-        tv_address.setTextColor(808080);
-        tv_friend.setTextColor(808080);
-        tv_setting.setTextColor(808080);
+        tv_home.setTextColor(Color.parseColor("#A9A9A9"));
+        tv_address.setTextColor(Color.parseColor("#A9A9A9"));
+        tv_friend.setTextColor(Color.parseColor("#A9A9A9"));
+        tv_setting.setTextColor(Color.parseColor("#A9A9A9"));
     }
 
     public void onClickButton(View v) {
@@ -228,6 +254,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.ld_navigation:
                 iv_home.setImageResource(R.drawable.tab_weixin_pressed);
                 tv_home.setTextColor(0xff1B940A);
+                viewPager.setCurrentItem(0);
                 Intent intent = new Intent();
                 intent.setClass(MainActivity.this,MapBoxActivity.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
                 startActivity(intent);
@@ -243,10 +270,6 @@ public class MainActivity extends AppCompatActivity {
                 iv_friend.setImageResource(R.drawable.tab_find_frd_pressed);
                 tv_friend.setTextColor(0xff1B940A);
                 viewPager.setCurrentItem(2);
-                Intent pIntent = new Intent();
-                pIntent.setClass(MainActivity.this,PhotoActivity.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
-                startActivityForResult(pIntent, 2);
-                setTitle("拍照导览");
                 break;
             case R.id.id_settings:
                 iv_setting.setImageResource(R.drawable.tab_find_frd_pressed);
@@ -277,6 +300,14 @@ public class MainActivity extends AppCompatActivity {
                     startActivityForResult(loginIntent, 4);
                     setTitle("登录");
                 }
+                break;
+            case R.id.ph_imageGuide:
+                Intent pIntent = new Intent();
+                pIntent.setClass(MainActivity.this,PhotoActivity.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
+                startActivityForResult(pIntent, 2);
+                setTitle("拍照导览");
+                break;
+            default:
                 break;
         }
     }
@@ -309,8 +340,8 @@ public class MainActivity extends AppCompatActivity {
                                         public void run() {
                                             //更新界面
                                             try{
-                                                ((ImageView)findViewById(R.id.imageView2)).setImageBitmap(image);
-                                                ((TextView)findViewById(R.id.textView)).setText(jsonobject.getString("name"));
+                                                ((ImageView)findViewById(R.id.imageVPhoto)).setImageBitmap(image);
+                                                ((TextView)findViewById(R.id.textVPhoto)).setText(jsonobject.getString("name"));
                                                 // 播放声音
                                                 final MediaPlayer mediaPlayer = new MediaPlayer();
                                                 if (mediaPlayer.isPlaying()) {
@@ -380,14 +411,12 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("URL", RequestURL);
                 String result = HttpUtils.doPost(RequestURL,reParams.toString());
                 net.sf.json.JSONObject resultJson = net.sf.json.JSONObject.fromObject(result);
-                if(!"true".equals(resultJson.get("success").toString())){
-                    loginFlag = false;
+                if("true".equals(resultJson.get("success").toString())){
+                    loginFlag = true;
                 }
             } catch (Exception e) {
                 loginFlag = false;
             }
-            // TODO: register the new account here.
-            loginFlag = true;
 
             Message msg = Message.obtain();
             msg.what = 0;

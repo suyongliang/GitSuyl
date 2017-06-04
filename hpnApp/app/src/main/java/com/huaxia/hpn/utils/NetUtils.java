@@ -71,7 +71,7 @@ public class NetUtils
     {
         //提示对话框
         AlertDialog.Builder builder=new AlertDialog.Builder(context);
-        builder.setTitle("网络设置提示").setMessage("WIFI未连接,是否进行设置?").setPositiveButton("设置", new DialogInterface.OnClickListener() {
+        builder.setTitle("网络设置提示").setMessage("次应用需要使用WIFI功能，是否设置?").setPositiveButton("设置", new DialogInterface.OnClickListener() {
 
             @Override
             public void onClick(DialogInterface dialog, int which) {

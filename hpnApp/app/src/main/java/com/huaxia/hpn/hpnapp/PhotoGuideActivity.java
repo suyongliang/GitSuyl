@@ -32,7 +32,7 @@ public class PhotoGuideActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.photo_guide);
 
-        mImageView = (ImageView) findViewById(R.id.imageView1);
+        mImageView = (ImageView) findViewById(R.id.imageView);
 
         //获取SD卡的路径
         sdPath = Environment.getExternalStorageDirectory().getPath();

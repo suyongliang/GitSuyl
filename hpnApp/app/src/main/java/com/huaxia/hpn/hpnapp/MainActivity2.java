@@ -255,18 +255,19 @@ public class MainActivity2 extends AppCompatActivity {
         // Convert LineString coordinates into LatLng[]
         LineString lineString = LineString.fromPolyline(route.getGeometry(), Constants.OSRM_PRECISION_V5);
         List<Position> coordinates = lineString.getCoordinates();
-        LatLng[] points = new LatLng[coordinates.size()];
+//        LatLng[] points = new LatLng[coordinates.size()];
+        ArrayList<LatLng> points = new ArrayList<LatLng>();
         for (int i = 0; i < coordinates.size(); i++) {
-            points[i] = new LatLng(
+            points.add(new LatLng(
                     coordinates.get(i).getLatitude(),
-                    coordinates.get(i).getLongitude());
+                    coordinates.get(i).getLongitude()));
         }
 
         // Draw Points on MapView
         map.addPolyline(new PolylineOptions()
-                .add(points)
-                .color(Color.parseColor("#009688"))
-                .width(5));
+                .addAll(points)
+                .color(Color.parseColor("#3bb2d0"))
+                .width(10));
     }
 
     private void toggleGps(boolean enableGps) {
@@ -506,6 +507,14 @@ public class MainActivity2 extends AppCompatActivity {
             float azimuth=point_Plane.getAzimuth();
             pointMap.put("Point", point);
             pointMap.put("Azimuth", azimuth);
+            if (point != null && map != null){
+                //删除所有之前的标记
+                map.removeAnnotations();
+                map.addMarker(new MarkerOptions()
+                        .position(new LatLng(point.getY(), point.getX()))
+                        .title("我的位置!")
+                        .snippet("Welcome to my marker."));
+            }
 
             Log.i("pointMap", pointMap.toString());
         }

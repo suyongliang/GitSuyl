@@ -15,6 +15,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.huaxia.hpn.headerview.MyToolBar;
 import com.huaxia.hpn.utils.AppUtils;
 import com.huaxia.hpn.utils.ImageUtils;
 import com.huaxia.hpn.utils.IpMacUtils;
@@ -50,6 +51,8 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
     private String TAG = "PhotoActivity";
     private Bitmap image;
     private Intent mainIntent;
+
+    private MyToolBar myToolBar;// 自定义toolbar
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -220,7 +223,7 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
             params.put("macCode", macCode);
             params.put("photo", imgBase64);
             params.put("operater", "app");
-            client.setConnectTimeout(100000);
+//            client.setConnectTimeout(100000);
             client.post(RequestURL, params, new JsonHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response){
