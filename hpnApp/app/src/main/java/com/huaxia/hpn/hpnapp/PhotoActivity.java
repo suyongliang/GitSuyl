@@ -24,6 +24,7 @@ import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
 
 import org.apache.http.Header;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -96,6 +97,7 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
                         try {
                             //image = MediaStore.Images.Media.getBitmap(this.getActivity().getContentResolver(), mImageCaptureUri);
                             image = (Bitmap) data.getExtras().get("image");
+                            image = (Bitmap) ImageUtils.getBitmapFormUri(this, mImageCaptureUri);
                             Bitmap b = (Bitmap) data.getExtras().get("data");
                             if (image != null) {
                                 photo.setImageBitmap(image);
@@ -223,15 +225,22 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
             params.put("macCode", macCode);
             params.put("photo", imgBase64);
             params.put("operater", "app");
-//            client.setConnectTimeout(100000);
+            client.setConnectTimeout(100000);
+            client.setResponseTimeout(9000000);
+            client.setMaxRetriesAndTimeout(2, 1000000);
             client.post(RequestURL, params, new JsonHttpResponseHandler() {
                 @Override
                 public void onSuccess(int statusCode, Header[] headers, JSONObject response){
                     try {
-                        Toast.makeText(getApplicationContext(), "图片上传成功!", Toast.LENGTH_SHORT).show();
-                        mainIntent.putExtra("image", response.get("collectionses").toString());
-                        mainIntent.putExtra("requestCode", RESULT_OK);
-                        setResult(RESULT_OK, mainIntent);
+                        JSONArray imageArray = new JSONArray(response.get("collectionses").toString());
+                        if(imageArray.length() > 0){
+                            Toast.makeText(getApplicationContext(), "图片导览成功!", Toast.LENGTH_SHORT).show();
+                            mainIntent.putExtra("image", response.get("collectionses").toString());
+                            mainIntent.putExtra("requestCode", RESULT_OK);
+                            setResult(RESULT_OK, mainIntent);
+                        } else {
+                            Toast.makeText(getApplicationContext(), "没找到关联资源!", Toast.LENGTH_SHORT).show();
+                        }
                         PhotoActivity.this.finish();
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -239,12 +248,12 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
                 }
                 @Override
                 public void onFailure(int statusCode, Header[] headers, Throwable throwable, JSONObject errorResponse){
-                    Toast.makeText(getApplicationContext(), "图片上传失败!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "没找到关联资源!", Toast.LENGTH_SHORT).show();
                     PhotoActivity.this.finish();
                 }
                 @Override
                 public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                    Toast.makeText(getApplicationContext(), "图片上传失败!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "没找到关联资源!", Toast.LENGTH_SHORT).show();
                     PhotoActivity.this.finish();
                 }
             });

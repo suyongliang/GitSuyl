@@ -86,12 +86,13 @@
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
             android:name=".PhotoDetailActivity"
-            android:launchMode="singleTop"
-            android:label="@string/guide_name"
-            android:parentActivityName=".MapBoxActivity">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.huaxia.hpn.hpnapp.MapBoxActivity" />
+            android:theme="@style/MyDialogStyleBottom"
+            android:launchMode="singleTop">
+            <!--android:label="@string/guide_name"-->
+            <!--android:parentActivityName=".MapBoxActivity">-->
+            <!--<meta-data-->
+                <!--android:name="android.support.PARENT_ACTIVITY"-->
+                <!--android:value="com.huaxia.hpn.hpnapp.MapBoxActivity" />-->
         </activity>
     </application>
 

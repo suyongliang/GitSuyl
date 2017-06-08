@@ -27,6 +27,8 @@ import com.esri.core.geometry.Point;
 import com.esri.core.geometry.SpatialReference;
 import com.huaxia.hpn.utils.IpMacUtils;
 import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.annotations.Icon;
+import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraPosition;
@@ -166,6 +168,8 @@ public class MainActivity2 extends AppCompatActivity {
     }
 
     private void updateMap(double latitude, double longitude) {
+        IconFactory iconFactory = IconFactory.getInstance(MainActivity2.this);
+        Icon icon = iconFactory.fromResource(R.drawable.click_marker);
         // Build marker
         map.addMarker(new MarkerOptions()
                 .position(new LatLng(latitude, longitude))

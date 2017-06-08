@@ -258,13 +258,13 @@ public class MainActivity extends AppCompatActivity {
                 Intent intent = new Intent();
                 intent.setClass(MainActivity.this,MapBoxActivity.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
                 startActivity(intent);
-                setTitle("导航");
+                setTitle("导航导览");
                 break;
             case R.id.id_guide:
                 iv_address.setImageResource(R.drawable.tab_address_pressed);
                 tv_address.setTextColor(0xff1B940A);
                 viewPager.setCurrentItem(1);
-                setTitle("导览");
+                setTitle("简介");
                 break;
             case R.id.id_photo_guide:
                 iv_friend.setImageResource(R.drawable.tab_find_frd_pressed);

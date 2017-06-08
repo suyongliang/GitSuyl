@@ -29,13 +29,15 @@ import java.net.URL;
  * Created by hx-suyl on 2017/3/18.
  */
 public class ImageUtils {
-private static final String TAG = "ImageUtils";
+    private static final String TAG = "ImageUtils";
+
+    private Bitmap bitmap = null;
     /**
      * 获取网络图片的数据
      * @param path 网络图片路径
      * @return bitmap
      */
-    public static Bitmap getImage(String path) throws Exception{
+    public static Bitmap getImage(String path){
 
         Log.v(TAG, "getbitmap:" + path);
         // 显示网络上的图片
@@ -55,6 +57,51 @@ private static final String TAG = "ImageUtils";
             e.printStackTrace();
             bitmap = null;
         } catch (IOException e) {
+            e.printStackTrace();
+            Log.v(TAG, "getbitmap bmp fail---");
+            bitmap = null;
+        }catch (Exception e) {
+            e.printStackTrace();
+            Log.v(TAG, "getbitmap bmp fail---");
+            bitmap = null;
+        }
+        return bitmap;
+    }
+
+    /**
+     * 获取网络图片的数据
+     * @param path 网络图片路径
+     * @return bitmap
+     */
+    public Bitmap getImageAsync(String path){
+
+        Log.v(TAG, "getbitmap:" + path);
+        final String newPath = path;
+        // 显示网络上的图片
+        try {
+            new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        URL myFileUrl = new URL(newPath);
+                        HttpURLConnection conn = (HttpURLConnection) myFileUrl
+                                .openConnection();
+                        conn.setDoInput(true);
+                        conn.connect();
+                        InputStream is = conn.getInputStream();
+                        bitmap = BitmapFactory.decodeStream(is);
+                        is.close();
+
+                        Log.v(TAG, "image download finished." + newPath);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            }.start();
+        } catch (OutOfMemoryError e) {
+            e.printStackTrace();
+            bitmap = null;
+        }catch (Exception e) {
             e.printStackTrace();
             Log.v(TAG, "getbitmap bmp fail---");
             bitmap = null;
@@ -287,4 +334,27 @@ private static final String TAG = "ImageUtils";
 //        String imgFilePath = "d:\\332.jpg";//新生成的图片
 //        base642Image(imgbese,imgFilePath);
 //    }
+
+    public static final Bitmap createRGBImage(Bitmap bitmap,int color)
+    {
+        int bitmap_w=bitmap.getWidth();
+        int bitmap_h=bitmap.getHeight();
+        int[] arrayColor=new int[bitmap_w*bitmap_h];
+        int count=0;
+        for(int i=0;i<bitmap_h;i++){
+            for(int j=0;j<bitmap_w;j++){
+                int color1=bitmap.getPixel(j,i);
+                //这里也可以取出 R G B 可以扩展一下 做更多的处理，
+                //暂时我只是要处理除了透明的颜色，改变其他的颜色
+                if(color1!=0){
+                }else{
+                    color1=color;
+                }
+                arrayColor[count]=color;
+                count++;
+            }
+        }
+        bitmap = Bitmap.createBitmap( arrayColor, bitmap_w, bitmap_h, Bitmap.Config.ARGB_4444 );
+        return bitmap;
+    }
 }

@@ -9,28 +9,38 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.location.Location;
+import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.esri.core.geometry.Point;
 import com.huaxia.hpn.headerview.MyToolBar;
 import com.huaxia.hpn.utils.AppUtils;
 import com.huaxia.hpn.utils.HttpUtils;
+import com.huaxia.hpn.utils.ImageUtils;
 import com.huaxia.hpn.utils.IpMacUtils;
 import com.huaxia.hpn.utils.SocketUtil;
 import com.huaxia.hpn.utils.TCPClient;
 import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.annotations.Icon;
+import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.Marker;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
@@ -63,9 +73,10 @@ import com.mapbox.services.api.directions.v5.models.DirectionsResponse;
 import com.mapbox.services.api.directions.v5.models.DirectionsRoute;
 import com.mapbox.services.commons.geojson.LineString;
 import com.mapbox.services.commons.models.Position;
-
 import net.sf.json.JSON;
 import net.sf.json.JSONObject;
+
+import org.json.JSONArray;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,6 +85,7 @@ import java.io.Writer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 import ips.casm.com.radiomap.MPoint;
@@ -118,6 +130,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
     private GeoJsonSource indoorRouteSource;
 
     private MyToolBar myToolBar;// 自定义toolbar
+    private JSONArray imageArray;
 
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
@@ -130,6 +143,8 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
     private boolean locationFlg;
 
     private ValueAnimator hotelColorAnimator;
+
+    private Map<String, org.json.JSONObject > imageMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -179,14 +194,36 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                 if (point != null){
                     mapboxMap.addMarker(new MarkerOptions()
                             .position(new LatLng(point.getY(), point.getX()))
-                            .title("Hello World!")
-                            .snippet("Welcome to my marker."));
+                            .title("http://www.baidu.com")
+                            .snippet("http://www.baidu.com")
+                    );
                 } else {
                     mapboxMap.addMarker(new MarkerOptions()
                             .position(new LatLng(39.947635, 116.420298))
-                            .title("Hello World!")
-                            .snippet("Welcome to my marker."));
+                            .title("http://www.baidu.com")
+                            .snippet("http://www.baidu.com"));
                 }
+                mapboxMap.setOnMarkerClickListener(new MapboxMap.OnMarkerClickListener(){
+                    @Override
+                    public boolean onMarkerClick(Marker marker) {
+                        IconFactory iconFactory = IconFactory.getInstance(MapBoxActivity.this);
+                        Icon icon = iconFactory.fromResource(R.drawable.click_marker);
+//                        Bitmap bitmap = marker.getIcon().getBitmap();
+//                        Icon icon = iconFactory.fromBitmap(ImageUtils.createRGBImage(bitmap, R.color.blue));
+                        marker.setIcon(icon);
+                        if(imageMap.get(marker.getTitle()) != null){
+                            Intent intent = new Intent(MapBoxActivity.this, PhotoDetailActivity.class);
+                            /* 通过Bundle对象存储需要传递的数据 */
+                            Bundle bundle = new Bundle();
+                            bundle.putString("image", imageMap.get(marker.getTitle()).toString());
+                            intent.putExtras(bundle);
+                            startActivity(intent);
+                        } else {
+                            Toast.makeText(getApplicationContext(), "没找到关联资源!", Toast.LENGTH_SHORT).show();
+                        }
+                        return false;
+                    }
+                });
 //                setLayerVisible("indoor-building");
                 // Add the hotels source to the map
                 GeoJsonSource hotelSource = new GeoJsonSource("hotels", loadJsonFromAsset("la_hotels.geojson"));
@@ -439,7 +476,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
             if (lastLocation != null) {
 //                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLocation), 16));
                 Point point = (Point)pointMap.get("Point");
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 22.5));
             }
 
             locationEngineListener = new LocationEngineListener() {
@@ -457,7 +494,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                         // listener is registered again and will adjust the camera once again.
 //                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location), 16));
                         Point point = (Point)pointMap.get("Point");
-                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
+                        map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 22.5));
                         locationEngine.removeLocationEngineListener(this);
                     }
                 }
@@ -567,10 +604,15 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                 for (Marker maker : map.getMarkers()) {
                     map.removeMarker(maker);
                 }
+                // Create an Icon object for the marker to use
+                IconFactory iconFactory = IconFactory.getInstance(MapBoxActivity.this);
+                Icon icon = iconFactory.fromResource(R.drawable.navi_map_gps_locked);
+
                 map.addMarker(new MarkerOptions()
                         .position(new LatLng(point.getY(), point.getX()))
                         .title("我的位置!")
-                        .snippet("Welcome to my marker."));
+                        .snippet("http://www.baidu.com")
+                        .icon(icon));
 //                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
             }
 //            sendPoint();
@@ -815,12 +857,14 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                 if(resultJson.size() == 0){
                     return false;
                 } else if(resultJson.get("collectionses") != null){
-                    Intent intent = new Intent(MapBoxActivity.this, PhotoDetailActivity.class);
-                    /* 通过Bundle对象存储需要传递的数据 */
-                    Bundle bundle = new Bundle();
-                    bundle.putString("image", resultJson.get("collectionses").toString());
-                    intent.putExtras(bundle);
-                    startActivity(intent);
+//                    Intent intent = new Intent(MapBoxActivity.this, PhotoDetailActivity.class);
+//                    /* 通过Bundle对象存储需要传递的数据 */
+//                    Bundle bundle = new Bundle();
+//                    bundle.putString("image", resultJson.get("collectionses").toString());
+//                    intent.putExtras(bundle);
+//                    startActivity(intent);
+                    // 再地图上把图片的经纬度加到marker上
+                    imageArray = new JSONArray(resultJson.get("collectionses").toString());
                 }
 
             } catch (Exception e) {
@@ -837,6 +881,57 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
 
             if (success) {
                 Toast.makeText(getApplicationContext(), "发送经纬度和方位角成功!", Toast.LENGTH_SHORT).show();
+                try{
+                    // 再地图上把图片的经纬度加到marker上
+                    Properties properties = AppUtils.getProperties(getApplicationContext());
+                    final String defURL=properties.getProperty("defUrl");
+                    imageMap = new HashMap<String, org.json.JSONObject>();
+                    for(int i=0;i<imageArray.length();i++){
+                        org.json.JSONObject jsonobject = imageArray.getJSONObject(i);
+                        String imgurl = defURL + jsonobject.get("pictureUrl").toString();
+                        imageMap.put(jsonobject.getString("name"), jsonobject);
+
+                        map.addMarker(new MarkerOptions()
+                                .position(new LatLng((Double)jsonobject.get("latitude"), (Double)jsonobject.get("longitude")))
+                                .title(jsonobject.getString("name"))
+                                .snippet(jsonobject.getString("commentText"))
+                        );
+                    }
+                    map.setInfoWindowAdapter(new MapboxMap.InfoWindowAdapter() {
+                        @Nullable
+                        @Override
+                        public View getInfoWindow(@NonNull Marker marker){
+                            // The info window layout is created dynamically, parent is the info window
+                            // container
+                            LinearLayout parent = new LinearLayout(MapBoxActivity.this);
+                            parent.setLayoutParams(new LinearLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                            parent.setOrientation(LinearLayout.VERTICAL);
+                            try{
+                                // Depending on the marker title, the correct image source is used. If you
+                                // have many markers using different images, extending Marker and
+                                // baseMarkerOptions, adding additional options such as the image, might be
+                                // a better choice.
+                                ImageView countryFlagImage = new ImageView(MapBoxActivity.this);
+                                String imgurl = defURL + imageMap.get(marker.getTitle()).get("pictureUrl").toString();
+                                ImageUtils imageUtils = new ImageUtils();
+                                Bitmap image = imageUtils.getImageAsync(imgurl);
+                                countryFlagImage.setImageBitmap(image);
+
+                                // Set the size of the image
+                                countryFlagImage.setLayoutParams(new android.view.ViewGroup.LayoutParams(150, 100));
+
+                                // add the image view to the parent layout
+                                parent.addView(countryFlagImage);
+                            } catch (Exception e){
+                                e.printStackTrace();
+                            }
+                            return parent;
+                        }
+                    });
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
                 //finish();
             } else {
 //                mPasswordView.setError(getString(R.string.error_incorrect_password));
