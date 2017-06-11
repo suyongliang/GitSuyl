@@ -270,8 +270,8 @@ public class MainActivity2 extends AppCompatActivity {
         // Draw Points on MapView
         map.addPolyline(new PolylineOptions()
                 .addAll(points)
-                .color(Color.parseColor("#3bb2d0"))
-                .width(10));
+                .color(Color.parseColor("#009688"))
+                .width(5));
     }
 
     private void toggleGps(boolean enableGps) {

@@ -32,6 +32,7 @@ import android.widget.Toast;
 
 import com.esri.core.geometry.Point;
 import com.huaxia.hpn.headerview.MyToolBar;
+import com.huaxia.hpn.route.RoutePlanning;
 import com.huaxia.hpn.utils.AppUtils;
 import com.huaxia.hpn.utils.HttpUtils;
 import com.huaxia.hpn.utils.ImageUtils;
@@ -172,6 +173,10 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
             public void onMapReady(MapboxMap mapboxMap) {
                 map = mapboxMap;
                 map.setMaxZoomPreference(20.00);
+                String routesGeojson = loadJsonFromAsset("routes.geojson");
+                RoutePlanning.init(routesGeojson);
+                indoorRouteSource = new GeoJsonSource("indoor-building", routesGeojson);
+
                 longclick(map);
                 for (Marker maker : map.getMarkers()) {
                     map.removeMarker(maker);
@@ -185,7 +190,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                 levelButtons.startAnimation(animation);
                 levelButtons.setVisibility(View.VISIBLE);
 
-                indoorRouteSource = new GeoJsonSource("indoor-building", loadJsonFromAsset("routes.geojson"));
+//                indoorRouteSource = new GeoJsonSource("indoor-building", loadJsonFromAsset("routes.geojson"));
                 mapboxMap.addSource(indoorRouteSource);
 //
 //                // Add the building layers since we know zoom levels in range
@@ -210,7 +215,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                         Icon icon = iconFactory.fromResource(R.drawable.click_marker);
 //                        Bitmap bitmap = marker.getIcon().getBitmap();
 //                        Icon icon = iconFactory.fromBitmap(ImageUtils.createRGBImage(bitmap, R.color.blue));
-                        marker.setIcon(icon);
+//                        marker.setIcon(icon);
                         if(imageMap.get(marker.getTitle()) != null){
                             Intent intent = new Intent(MapBoxActivity.this, PhotoDetailActivity.class);
                             /* 通过Bundle对象存储需要传递的数据 */
@@ -382,7 +387,8 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
 
                 // Get route from API
                 try {
-                    getRoute(origin, destination);
+//                    getRoute(origin, destination);
+                    drawRoute(origin, destination);
                 } catch (ServicesException servicesException) {
                     servicesException.printStackTrace();
                 }
@@ -404,18 +410,21 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                 // You can get the generic HTTP info about the response
                 Log.d(TAG, "Response code: " + response.code());
                 if (response.body() == null) {
-                    Log.e(TAG, "No routes found, make sure you set the right user and access token.");
+                    Log.e(TAG, "无法找到路线, 请确认您的相关权限设置和访问令牌.");
                     return;
                 } else if (response.body().getRoutes().size() < 1) {
-                    Log.e(TAG, "No routes found");
+                    Log.e(TAG, "无法找到路线");
                     return;
                 }
 
                 // Print some info about the route
                 currentRoute = response.body().getRoutes().get(0);
                 Log.d(TAG, "Distance: " + currentRoute.getDistance());
-                showToastMessage("You are %d meters from your destination");
-
+//                showToastMessage("You are %d meters from your destination");
+                Toast.makeText(
+                        MapBoxActivity.this,
+                        "目的地距离您 " + currentRoute.getDistance() + "米远.",
+                        Toast.LENGTH_SHORT).show();
                 // Draw the route on the map
                 drawRoute(currentRoute);
             }
@@ -443,6 +452,21 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                     coordinates.get(i).getLongitude());
         }
 
+        // Draw Points on MapView
+        map.addPolyline(new PolylineOptions()
+                .add(points)
+                .color(Color.parseColor("#009688"))
+                .width(5));
+    }
+
+    private  void drawRoute(Position origin, Position destination){
+        List<Position> routePosition = RoutePlanning.getRoutePlanning(origin,destination);
+        LatLng[] points = new LatLng[routePosition.size()];
+        for (int i = 0; i < routePosition.size(); i++) {
+            points[i] = new LatLng(
+                    routePosition.get(i).getLatitude(),
+                    routePosition.get(i).getLongitude());
+        }
         // Draw Points on MapView
         map.addPolyline(new PolylineOptions()
                 .add(points)
@@ -935,8 +959,9 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                 //finish();
             } else {
 //                mPasswordView.setError(getString(R.string.error_incorrect_password));
-                net.sf.json.JSONObject resultJson = net.sf.json.JSONObject.fromObject(result);
-                Toast.makeText(getApplicationContext(), resultJson.get("msg").toString(), Toast.LENGTH_SHORT).show();
+//                net.sf.json.JSONObject resultJson = net.sf.json.JSONObject.fromObject(result);
+//                Toast.makeText(getApplicationContext(), resultJson.get("msg").toString(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), "导览失败！", Toast.LENGTH_SHORT).show();
             }
         }
 

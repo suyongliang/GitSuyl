@@ -4,14 +4,23 @@
     android:layout_height="match_parent"
     android:gravity="center"
     android:orientation="vertical" >
+      <TextView android:text="关于故宫博物院"
+          android:id="@+id/au_title"
+          android:background="#1788D8"
+          android:textAppearance="?android:attr/textAppearanceMedium"
+          android:layout_width="fill_parent"
+          android:textColor="#ffffff"
+          android:gravity="center"
+          android:layout_height="wrap_content">
+      </TextView>
       <TextView
+        android:id="@+id/tvAbout"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""
+        android:text="故宫为中国明、清两代（公元1368～1911年）的皇宫，依照中国古代星象学说，紫微垣（即北极星）位于中天，乃天帝所居，天人对应，是以故宫又称紫禁城。明代第三位皇帝朱棣在夺取帝位后，决定迁都北京，公元1406年即开始营造宫殿，至明永乐十八年（公元1420年）落成。1911年，辛亥革命推翻了中国最后的封建帝制——清王朝，1924年清逊帝爱新觉罗·溥仪被逐出宫禁。"
         android:layout_centerVertical="true"
-        android:textColor="#000000"
-        android:textSize="40sp"
-        android:textStyle="bold"
-        />
+        android:textColor="#000000">
+      </TextView>
+
 
 </LinearLayout>

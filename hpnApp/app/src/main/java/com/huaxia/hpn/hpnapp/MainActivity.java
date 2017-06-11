@@ -193,6 +193,8 @@ public class MainActivity extends AppCompatActivity {
         // 中间内容区域ViewPager
         this.viewPager = (ViewPager) findViewById(R.id.vp_content);
 
+        // 简介
+
         // 适配器
         View page_01 = View.inflate(MainActivity.this, R.layout.navigation, null);
         View page_02 = View.inflate(MainActivity.this, R.layout.guide, null);
