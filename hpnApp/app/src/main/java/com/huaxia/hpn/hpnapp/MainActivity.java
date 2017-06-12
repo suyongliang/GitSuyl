@@ -147,12 +147,12 @@ public class MainActivity extends AppCompatActivity {
                     //当前view被选择的时候,改变底部菜单图片，文字颜色
                     switch (arg0) {
                         case 0:
-                            iv_home.setImageResource(R.drawable.tab_weixin_pressed);
-                            tv_home.setTextColor(0xff1B940A);
-                            break;
-                        case 1:
                             iv_address.setImageResource(R.drawable.tab_address_pressed);
                             tv_address.setTextColor(0xff1B940A);
+                            break;
+                        case 1:
+                            iv_home.setImageResource(R.drawable.tab_weixin_pressed);
+                            tv_home.setTextColor(0xff1B940A);
                             break;
                         case 2:
                             iv_friend.setImageResource(R.drawable.tab_find_frd_pressed);
@@ -167,26 +167,25 @@ public class MainActivity extends AppCompatActivity {
                             break;
                     }
                 }
-
         });
     }
 
     private void initView() {
         // 底部菜单4个Linearlayout
-        this.ll_home = (LinearLayout) findViewById(R.id.ld_navigation);
         this.ll_address = (LinearLayout) findViewById(R.id.id_guide);
+        this.ll_home = (LinearLayout) findViewById(R.id.ld_navigation);
         this.ll_friend = (LinearLayout) findViewById(R.id.id_photo_guide);
         this.ll_setting = (LinearLayout) findViewById(R.id.id_settings);
 
         // 底部菜单4个ImageView
-        this.iv_home = (ImageButton) findViewById(R.id.id_navigation_img);
         this.iv_address = (ImageButton) findViewById(R.id.id_guide_img);
+        this.iv_home = (ImageButton) findViewById(R.id.id_navigation_img);
         this.iv_friend = (ImageButton) findViewById(R.id.id_photo_guide_img);
         this.iv_setting = (ImageButton) findViewById(R.id.id_settings_img);
 
         // 底部菜单4个菜单标题
-        this.tv_home = (TextView) findViewById(R.id.tv_navigation);
         this.tv_address = (TextView) findViewById(R.id.tv_guide);
+        this.tv_home = (TextView) findViewById(R.id.tv_navigation);
         this.tv_friend = (TextView) findViewById(R.id.tv_photo_guide);
         this.tv_setting = (TextView) findViewById(R.id.tv_settings);
 
@@ -196,10 +195,10 @@ public class MainActivity extends AppCompatActivity {
         // 简介
 
         // 适配器
-        View page_01 = View.inflate(MainActivity.this, R.layout.navigation, null);
-        View page_02 = View.inflate(MainActivity.this, R.layout.guide, null);
-        View page_03 = View.inflate(MainActivity.this, R.layout.photo_guide, null);
-        View page_04 = View.inflate(MainActivity.this, R.layout.user_info, null);
+        View page_01 = View.inflate(MainActivity.this, R.layout.guide, null); // 博物馆简介
+        View page_02 = View.inflate(MainActivity.this, R.layout.navigation, null); // 导航导览
+        View page_03 = View.inflate(MainActivity.this, R.layout.photo_guide, null);// 拍照导览
+        View page_04 = View.inflate(MainActivity.this, R.layout.user_info, null);// 我的
 
         views = new ArrayList<View>();
         views.add(page_01);
@@ -253,20 +252,20 @@ public class MainActivity extends AppCompatActivity {
         restartBotton();
         // ImageView和TetxView置为绿色，页面随之跳转
         switch (v.getId()) {
+            case R.id.id_guide:
+                iv_address.setImageResource(R.drawable.tab_address_pressed);
+                tv_address.setTextColor(0xff1B940A);
+                viewPager.setCurrentItem(0);
+                setTitle("简介");
+                break;
             case R.id.ld_navigation:
                 iv_home.setImageResource(R.drawable.tab_weixin_pressed);
                 tv_home.setTextColor(0xff1B940A);
-                viewPager.setCurrentItem(0);
+                viewPager.setCurrentItem(1);
                 Intent intent = new Intent();
                 intent.setClass(MainActivity.this,MapBoxActivity.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
                 startActivity(intent);
                 setTitle("导航导览");
-                break;
-            case R.id.id_guide:
-                iv_address.setImageResource(R.drawable.tab_address_pressed);
-                tv_address.setTextColor(0xff1B940A);
-                viewPager.setCurrentItem(1);
-                setTitle("简介");
                 break;
             case R.id.id_photo_guide:
                 iv_friend.setImageResource(R.drawable.tab_find_frd_pressed);
@@ -305,7 +304,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.ph_imageGuide:
                 Intent pIntent = new Intent();
-                pIntent.setClass(MainActivity.this,PhotoActivity.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
+                pIntent.setClass(MainActivity.this,PopupActivity.class);// TestActivity 是要跳转到的Activity，需要在src下手动建立TestActivity.java文件
                 startActivityForResult(pIntent, 2);
                 setTitle("拍照导览");
                 break;

@@ -97,7 +97,7 @@ public class PhotoActivity extends AppCompatActivity implements View.OnClickList
                         try {
                             //image = MediaStore.Images.Media.getBitmap(this.getActivity().getContentResolver(), mImageCaptureUri);
                             image = (Bitmap) data.getExtras().get("image");
-                            image = (Bitmap) ImageUtils.getBitmapFormUri(this, mImageCaptureUri);
+                            image = (Bitmap) ImageUtils.compressImage(image);
                             Bitmap b = (Bitmap) data.getExtras().get("data");
                             if (image != null) {
                                 photo.setImageBitmap(image);

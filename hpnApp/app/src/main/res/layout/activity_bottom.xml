@@ -7,31 +7,6 @@
     android:layout_alignParentBottom="true">
 
     <LinearLayout
-        android:id="@+id/ld_navigation"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:gravity="center"
-        android:orientation="vertical" >
-        <!-- android:clickable="false" 是为了防止ImageButton截取了触摸事件 ，这里事件要给它的上一级linearlayout-->
-        <ImageButton
-            android:id="@+id/id_navigation_img"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="#00000000"
-            android:clickable="false"
-            android:src="@drawable/tab_weixin_pressed" />
-
-        <TextView
-            android:id="@+id/tv_navigation"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/gray"
-            android:text="导航"
-            />
-    </LinearLayout>
-
-    <LinearLayout
         android:id="@+id/id_guide"
         android:layout_width="0dp"
         android:layout_height="match_parent"
@@ -45,7 +20,7 @@
             android:layout_height="wrap_content"
             android:background="#00000000"
             android:clickable="false"
-            android:src="@drawable/tab_address_normal" />
+            android:src="@drawable/tab_weixin_pressed" />
 
         <TextView
             android:id="@+id/tv_guide"
@@ -53,6 +28,31 @@
             android:layout_height="wrap_content"
             android:textColor="@color/gray"
             android:text="博物馆简介"
+            />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ld_navigation"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical" >
+        <!-- android:clickable="false" 是为了防止ImageButton截取了触摸事件 ，这里事件要给它的上一级linearlayout-->
+        <ImageButton
+            android:id="@+id/id_navigation_img"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#00000000"
+            android:clickable="false"
+            android:src="@drawable/tab_address_normal" />
+
+        <TextView
+            android:id="@+id/tv_navigation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/gray"
+            android:text="导航"
             />
     </LinearLayout>
 

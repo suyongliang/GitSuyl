@@ -94,7 +94,7 @@ public class RoutePlanning {
         if(lineSegments==null){
             return null;
         }
-        double nearestStep = 99999999;
+        double nearestStep = Double.MAX_VALUE;
         HashMap<String, LineSegment> distanceLineMap = new HashMap<String, LineSegment>();
         for(LineSegment lineSegment:lineSegments){
             double dis = RouteUtil.getNearestDistance(position,lineSegment);
@@ -173,14 +173,14 @@ public class RoutePlanning {
 
     public static List<Position> getRoutePlanning(Position startPosition, Position endPosition){
         List<Position> positions = new ArrayList<Position>();
-        positions.add(startPosition);
+        //positions.add(startPosition);
         Position snp = getNearestPosition(startPosition);
         Position sep = getNearestPosition(endPosition);
          List<String> positionNames = DijkstraUtil.dijkstra(snp.toString(),sep.toString());
         for(String positionName : positionNames){
             positions.add(namePositionMap.get(positionName));
         }
-        positions.add(endPosition);
+        //positions.add(endPosition);
         return positions;
     }
 }

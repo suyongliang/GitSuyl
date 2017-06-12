@@ -196,18 +196,18 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
 //                // Add the building layers since we know zoom levels in range
                 loadBuildingLayer();
                 Point point = (Point)pointMap.get("Point");
-                if (point != null){
-                    mapboxMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(point.getY(), point.getX()))
-                            .title("http://www.baidu.com")
-                            .snippet("http://www.baidu.com")
-                    );
-                } else {
-                    mapboxMap.addMarker(new MarkerOptions()
-                            .position(new LatLng(39.947635, 116.420298))
-                            .title("http://www.baidu.com")
-                            .snippet("http://www.baidu.com"));
-                }
+//                if (point != null){
+//                    mapboxMap.addMarker(new MarkerOptions()
+//                            .position(new LatLng(point.getY(), point.getX()))
+//                            .title("http://www.baidu.com")
+//                            .snippet("http://www.baidu.com")
+//                    );
+//                } else {
+//                    mapboxMap.addMarker(new MarkerOptions()
+//                            .position(new LatLng(39.947635, 116.420298))
+//                            .title("http://www.baidu.com")
+//                            .snippet("http://www.baidu.com"));
+//                }
                 mapboxMap.setOnMarkerClickListener(new MapboxMap.OnMarkerClickListener(){
                     @Override
                     public boolean onMarkerClick(Marker marker) {
@@ -368,13 +368,16 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
             @Override
             public void onMapLongClick(LatLng point) {
 
+//                String routesGeojson = loadJsonFromAsset("routes.geojson");
+//                RoutePlanning.init(routesGeojson);
+
                 //删除所有之前的标记
                 mapboxMap.removeAnnotations();
 
                 // Set the origin waypoint to the devices location设置初始位置
 //                Position origin = Position.fromCoordinates(mapboxMap.getMyLocation().getLongitude(), mapboxMap.getMyLocation().getLatitude());
                 Point pointBegin = (Point)pointMap.get("Point");
-                Position origin = Position.fromCoordinates(pointBegin.getY(), pointBegin.getX());
+                Position origin = Position.fromCoordinates(pointBegin.getX(),pointBegin.getY());
 
                 // 设置目的地路径--点击的位置点
                 Position destination = Position.fromCoordinates(point.getLongitude(), point.getLatitude());
@@ -616,7 +619,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
 //			SpatialReference cgcs2000Geodetic=mMapView.getSpatialReference();
             //投影反算,获得点位信息
 //            mPoint=(Point) GeometryEngine.project(point, cgcs2000NoneZone, cgcs2000Geodetic);
-            Log.i("IPSPointReceiver", "投影后坐标为：" + point_Plane.x + "," + point_Plane.y);
+            Log.i("IPSPointReceiver", "计算后坐标为：" + point_Plane.x + "," + point_Plane.y);
             //获得azimuth
             float azimuth = point_Plane.getAzimuth();
 //            Point point2 = new Point(116.420298, 39.947635);
@@ -910,6 +913,10 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
                     Properties properties = AppUtils.getProperties(getApplicationContext());
                     final String defURL=properties.getProperty("defUrl");
                     imageMap = new HashMap<String, org.json.JSONObject>();
+                    // 先删除以前的marker
+                    for (Marker maker : map.getMarkers()) {
+                        map.removeMarker(maker);
+                    }
                     for(int i=0;i<imageArray.length();i++){
                         org.json.JSONObject jsonobject = imageArray.getJSONObject(i);
                         String imgurl = defURL + jsonobject.get("pictureUrl").toString();
