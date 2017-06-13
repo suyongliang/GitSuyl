@@ -1,7 +1,6 @@
 package com.huaxia.hpn.route;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.mapbox.services.commons.models.Position;
 
@@ -9,13 +8,11 @@ import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
+import static com.loopj.android.http.AsyncHttpClient.log;
 
 /**
  * Created by liulx on 2017/6/9.
@@ -24,6 +21,8 @@ import java.util.List;
 public class RoutePlanning {
     static List<LineSegment> lineSegments = null;
     static HashMap<String,Position> namePositionMap = new HashMap<String,Position>();
+    static List<LineSegment> routeLineSegments = null;
+    static RouteEngine routeEngine = new RouteEngine();
     public static void init(String geojosnString){
         try{
         if(lineSegments==null){
@@ -52,32 +51,32 @@ public class RoutePlanning {
                         namePositionMap.put(position1.toString(),position1);
                         namePositionMap.put(position2.toString(),position2);
 
-                        DijkstraUtil.Vertex v1 = DijkstraUtil.Vertex.getInstance(position1.toString());//建点
-                        List<DijkstraUtil.Edge> v1Es = v1.edges;//建边
+                        RouteEngine.Vertex v1 = routeEngine.new Vertex().creatBaseVertex(position1.toString());//建点
+                        List<RouteEngine.Edge> v1Es = v1.getEdges();//建边
 
-                        DijkstraUtil.Vertex v2 = DijkstraUtil.Vertex.getInstance(position2.toString());//建点
-                        List<DijkstraUtil.Edge> v2Es = v2.edges;//建边
+                        RouteEngine.Vertex v2 = routeEngine.new Vertex().creatBaseVertex(position2.toString());//建点
+                        List<RouteEngine.Edge> v2Es = v2.getEdges();//建边
 
                         boolean exist = false;
-                        for(DijkstraUtil.Edge edge :v1Es ){
-                            if(StringUtils.equals(edge.dest.name,v2.name)){
+                        for(RouteEngine.Edge edge :v1Es ){
+                            if(StringUtils.equals(edge.getDest().getName(),v2.getName())){
                                 exist = true;
                                 break;
                             }
                         }
                         if(!exist){
-                            DijkstraUtil.Edge edge = new DijkstraUtil.Edge(v2, lineSegment.getLenth());//赋值边
+                            RouteEngine.Edge edge =routeEngine.new Edge(v2, lineSegment.getLenth());//赋值边
                             v1Es.add(edge);
                         }
                         exist = false;
-                        for(DijkstraUtil.Edge edge :v2Es ){
-                            if(StringUtils.equals(edge.dest.name,v1.name)){
+                        for(RouteEngine.Edge edge :v2Es ){
+                            if(StringUtils.equals(edge.getDest().getName(),v2.getName())){
                                 exist = true;
                                 break;
                             }
                         }
                         if(!exist){
-                            DijkstraUtil.Edge edge = new DijkstraUtil.Edge(v1, lineSegment.getLenth());//赋值边
+                            RouteEngine.Edge edge =routeEngine.new Edge(v1, lineSegment.getLenth());//赋值边
                             v2Es.add(edge);
                         }
                     }
@@ -90,7 +89,7 @@ public class RoutePlanning {
 
     };
 
-    public static LineSegment getNearestLine(Position position){
+    public static LineSegment getNearestLine(Position position,List<LineSegment> lineSegments){
         if(lineSegments==null){
             return null;
         }
@@ -107,80 +106,99 @@ public class RoutePlanning {
     }
 
     public static Position getNearestPosition(Position position){
-        LineSegment lineSegment = getNearestLine(position);
+        LineSegment lineSegment = getNearestLine(position,lineSegments);
         Position p1 = lineSegment.getP1();
         Position p2 = lineSegment.getP2();
-        Position pp = DijkstraUtil.getProjectivePoint(p1,p2,position);
+        Position pp = routeEngine.getProjectivePoint(p1,p2,position);
 
         //增加一个顶点，两条线段、并建图
         namePositionMap.put(pp.toString(),pp);
         LineSegment lineSegment1 = new LineSegment(p1,pp);
         LineSegment lineSegment2 = new LineSegment(p2,pp);
-        DijkstraUtil.Vertex pv = DijkstraUtil.Vertex.getInstance(pp.toString());//建点
-        DijkstraUtil.Vertex pv1 = DijkstraUtil.Vertex.getInstance(p1.toString());//获取p1顶点
-        DijkstraUtil.Vertex pv2 = DijkstraUtil.Vertex.getInstance(p2.toString());//获取p2顶点
-        List<DijkstraUtil.Edge> pvEs = pv.edges;//建边
+        RouteEngine.Vertex pv = routeEngine.new Vertex().addRouteVertex(pp.toString());//建点
+        RouteEngine.Vertex pv1 = routeEngine.new Vertex().addRouteVertex(p1.toString());//获取p1顶点
+        RouteEngine.Vertex pv2 = routeEngine.new Vertex().addRouteVertex(p2.toString());//获取p2顶点
+        List<RouteEngine.Edge> pvEs = pv.getEdges();//建边
         boolean exist = false;
-        for(DijkstraUtil.Edge edge :pvEs ){
-            if(StringUtils.equals(edge.dest.name,pv1.name)){
+        for(RouteEngine.Edge edge :pvEs ){
+            if(StringUtils.equals(edge.getDest().getName(),pv1.getName())){
                 exist = true;
                 break;
             }
         }
         if(!exist){
-            DijkstraUtil.Edge edge = new DijkstraUtil.Edge(pv1, lineSegment1.getLenth());//赋值边
+            RouteEngine.Edge edge =routeEngine.new Edge(pv1, lineSegment1.getLenth());//赋值边
             pvEs.add(edge);
         }
         exist = false;
-        for(DijkstraUtil.Edge edge :pvEs ){
-            if(StringUtils.equals(edge.dest.name,pv2.name)){
+        for(RouteEngine.Edge edge :pvEs ){
+            if(StringUtils.equals(edge.getDest().getName(),pv2.getName())){
                 exist = true;
                 break;
             }
         }
         if(!exist){
-            DijkstraUtil.Edge edge = new DijkstraUtil.Edge(pv2, lineSegment2.getLenth());//赋值边
+            RouteEngine.Edge edge =routeEngine.new Edge(pv2, lineSegment2.getLenth());//赋值边
             pvEs.add(edge);
         }
 
-        List<DijkstraUtil.Edge> pv1Es = pv1.edges;//建边
+        List<RouteEngine.Edge> pv1Es = pv1.getEdges();//建边
         exist = false;
-        for(DijkstraUtil.Edge edge :pv1Es ){
-            if(StringUtils.equals(edge.dest.name,pv1.name)){
+        for(RouteEngine.Edge edge :pv1Es ){
+            if(StringUtils.equals(edge.getDest().getName(),pv1.getName())){
                 exist = true;
                 break;
             }
         }
         if(!exist){
-            DijkstraUtil.Edge pv1pv = new DijkstraUtil.Edge(pv, lineSegment1.getLenth());//赋值边
+            RouteEngine.Edge pv1pv =routeEngine.new Edge(pv, lineSegment1.getLenth());//赋值边
             pv1Es.add(pv1pv);
         }
 
-        List<DijkstraUtil.Edge> pv2Es = pv2.edges;//建边
+        List<RouteEngine.Edge> pv2Es = pv2.getEdges();//建边
         exist = false;
-        for(DijkstraUtil.Edge edge :pv2Es ){
-            if(StringUtils.equals(edge.dest.name,pv2.name)){
+        for(RouteEngine.Edge edge :pv2Es ){
+            if(StringUtils.equals(edge.getDest().getName(),pv2.getName())){
                 exist = true;
                 break;
             }
         }
         if(!exist){
-            DijkstraUtil.Edge pv2pv = new DijkstraUtil.Edge(pv, lineSegment2.getLenth());//赋值边
+            RouteEngine.Edge pv2pv =  routeEngine.new Edge(pv, lineSegment2.getLenth());//赋值边
             pv2Es.add(pv2pv);
         };
         return pp;
     }
 
-    public static List<Position> getRoutePlanning(Position startPosition, Position endPosition){
+    public List<Position> getRoutePlanning(Position startPosition, Position endPosition){
+        routeEngine.resetRouteVertexMap();
         List<Position> positions = new ArrayList<Position>();
-        //positions.add(startPosition);
+        routeLineSegments = new ArrayList<LineSegment>();
+        positions.add(startPosition);
         Position snp = getNearestPosition(startPosition);
         Position sep = getNearestPosition(endPosition);
-         List<String> positionNames = DijkstraUtil.dijkstra(snp.toString(),sep.toString());
+        log.e("RoutePlanning.getRoutePlanning ",snp.toString() + " -|- " + sep.toString());
+        List<String> positionNames = routeEngine.dijkstra(snp.toString(),sep.toString());
+        log.e("RoutePlanning.positionNames ",positionNames.toString());
+        log.e("","");
+        Position firstPosition = null;
         for(String positionName : positionNames){
-            positions.add(namePositionMap.get(positionName));
+            Position lastPosition = namePositionMap.get(positionName);
+            positions.add(lastPosition);
+            if(firstPosition!=null){
+                LineSegment lineSegment = new LineSegment(firstPosition,lastPosition);
+                routeLineSegments.add(lineSegment);
+            }
+            firstPosition = lastPosition;
         }
-        //positions.add(endPosition);
+        positions.add(endPosition);
         return positions;
+    }
+
+    public static Position getRouttingPosition(Position position){
+        LineSegment lineSegment = getNearestLine(position,routeLineSegments);
+        Position p1 = lineSegment.getP1();
+        Position p2 = lineSegment.getP2();
+        return routeEngine.getProjectivePoint(p1,p2,position);
     }
 }

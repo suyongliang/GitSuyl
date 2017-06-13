@@ -11,7 +11,7 @@ public class RouteUtil {
 
     public static double getPointDistance(Position p1, Position p2)
     {
-        return Math.sqrt((p1.getLatitude()-p2.getLatitude())*(p1.getLatitude()-p2.getLatitude())+(p1.getLongitude()-p2.getLongitude())*(p1.getLongitude()-p2.getLongitude()))*100000000;
+        return Math.sqrt((p1.getLatitude()-p2.getLatitude())*(p1.getLatitude()-p2.getLatitude())+(p1.getLongitude()-p2.getLongitude())*(p1.getLongitude()-p2.getLongitude()))*10000000;
     }
 
     public static double getNearestDistance(Position point, LineSegment line)
