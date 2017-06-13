@@ -170,7 +170,7 @@ public class RoutePlanning {
         return pp;
     }
 
-    public List<Position> getRoutePlanning(Position startPosition, Position endPosition){
+    public static List<Position> getRoutePlanning(Position startPosition, Position endPosition){
         routeEngine.resetRouteVertexMap();
         List<Position> positions = new ArrayList<Position>();
         routeLineSegments = new ArrayList<LineSegment>();

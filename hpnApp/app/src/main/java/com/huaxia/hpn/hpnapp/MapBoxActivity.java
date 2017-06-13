@@ -25,9 +25,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AlphaAnimation;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.esri.core.geometry.Point;
@@ -77,12 +80,14 @@ import com.mapbox.services.commons.models.Position;
 import net.sf.json.JSON;
 import net.sf.json.JSONObject;
 
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +109,7 @@ import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.visibility;
 import static java.lang.Thread.sleep;
 
-public class MapBoxActivity extends Activity implements PermissionsListener {
+public class MapBoxActivity extends Activity implements PermissionsListener, SearchView.OnQueryTextListener {
     private static final String TAG = "Activity";
     private static final int PERMISSIONS_LOCATION = 0;
     private MapView mapView;
@@ -147,6 +152,10 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
 
     private Map<String, org.json.JSONObject > imageMap;
 
+    private SearchView mSearchView;
+
+    private ListView mListView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -155,10 +164,6 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
         setContentView(R.layout.activity_mapbox);
         // 初始化视图
         initView();
-        // 初始化数据
-        initData();
-        // 事件监听
-        initListener();
 //        locationServices = LocationServices.getLocationServices(MapBoxActivity.this);
         // Get the location engine object for later use.
         locationEngine = LocationSource.getLocationEngine(this);
@@ -770,49 +775,43 @@ public class MapBoxActivity extends Activity implements PermissionsListener {
             layer.setProperties(visibility(VISIBLE));
         }
     }
-
+    List<String> list = new ArrayList<String>();
+    ArrayList<String> showlist = new ArrayList<String>(); //搜索建议显示列表
     /*
      * 初始化视图
      */
     private void initView() {
-        myToolBar = (MyToolBar) findViewById(R.id.myToolBar);
-        myToolBar.setLeftBtnText("返回");
-        myToolBar.setRightBtnText("");
-        myToolBar.setTvTitle("注册");
+        list.add("aaa");list.add("bbb");list.add("ccc"); list.add("airsaid");
+        mSearchView = (SearchView) findViewById(R.id.searchView);
+        // 为该SearchView组件设置事件监听器
+        mSearchView.setOnQueryTextListener(this);
+        mListView = (ListView) findViewById(R.id.listView);
+        mListView.setTextFilterEnabled(true);
+    }
+    // 当点击搜索按钮时触发该方法
+    @Override
+    public boolean onQueryTextSubmit(String query) {
+        return false;
     }
 
-    /*
-     * 初始化数据
-     */
-    private void initData() {
-        // 设置左边右边的按钮是否显示
-        myToolBar.setToolBarBtnVisiable(true, false);
-        // 设置是否显示中间标题，默认的是显示
-        myToolBar.setToolBarTitleVisible(true);
-    }
-
-    /*
-     * 事件监听
-     */
-    private void initListener() {
-        /*
-         * toolbar的点击事件处理
-         */
-        myToolBar.setOnMyToolBarClickListener(new MyToolBar.MyToolBarClickListener() {
-
-            @Override
-            public void rightBtnClick() {// 右边按钮点击事件
-                Toast.makeText(MapBoxActivity.this, "注册", Toast.LENGTH_SHORT).show();
+    // 当搜索内容改变时触发该方法
+    @Override
+    public boolean onQueryTextChange(String newText) {
+        showlist.clear();
+        if (!StringUtils.isEmpty(newText)){
+            for(int i = 0;i < list.size();i++){
+                if(list.get(i).startsWith(newText)){
+                    showlist.add(list.get(i));
+                }
             }
-
-            @Override
-            public void leftBtnClick() {// 左边按钮点击事件
-                Toast.makeText(MapBoxActivity.this, "返回", Toast.LENGTH_SHORT).show();
-                MapBoxActivity.this.finish();
-            }
-        });
+            mListView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, showlist));
+            mListView.setFilterText(newText);
+        }else{
+            mListView.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, showlist));
+            mListView.clearTextFilter();
+        }
+        return false;
     }
-
 
     //  发送当前位置和方位角给后台
     private void sendPointAndAzimuth(){

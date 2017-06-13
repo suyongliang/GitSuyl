@@ -28,6 +28,7 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="拍照"
+            android:textColor="@color/black"
             android:background="@color/white"
             android:textStyle="bold"
             />
@@ -39,6 +40,7 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="从相册选择"
+            android:textColor="@color/black"
             android:background="@color/white"
             android:textStyle="bold"
             />
@@ -51,6 +53,7 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="取消"
+            android:textColor="@color/black"
             android:background="@color/white"
             android:textStyle="bold"
             />

@@ -57,11 +57,11 @@
         </activity>
         <activity
             android:name=".PopupActivity"
-            android:parentActivityName=".PhotoActivity"
-            android:theme="@style/AppTheme">
+            android:parentActivityName=".MainActivity"
+            android:theme="@style/dialogstyle">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.huaxia.hpn.hpnapp.PhotoActivity" />
+                android:value="com.huaxia.hpn.hpnapp.MainActivity" />
         </activity>
         <activity
             android:name=".MapBoxActivity"
