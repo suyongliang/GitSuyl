@@ -614,7 +614,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             MPoint point_Plane = (MPoint) intent.getExtras().get(iMessage.sendIPSPoint2ActivityBroadcastActionKey);
             Log.e("IPSPointReceiver", "接收到的坐标为：" + point_Plane.toString());
             ConvertGauss2Geodetic convertGauss2Geodetic = new ConvertGauss2Geodetic();
-            MPoint cPoint = convertGauss2Geodetic.getBL(point_Plane.y,point_Plane.x);
+            MPoint cPoint = convertGauss2Geodetic.getLatLon(point_Plane.y,point_Plane.x);
             //创建geometry
             Point point = new Point(cPoint.x, cPoint.y);
 
