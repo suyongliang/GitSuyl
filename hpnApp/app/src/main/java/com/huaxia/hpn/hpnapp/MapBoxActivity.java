@@ -663,7 +663,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                             nowPoint.y -=deltaY;
                         }
                         Log.i("IPSPointReceiver", "位移坐标为：" + nowPoint.x + "," + nowPoint.y);
-                        cPoint = convertGauss2Geodetic.getBL(nowPoint.y,nowPoint.x);
+                        cPoint = convertGauss2Geodetic.getLatLon(nowPoint.y,nowPoint.x);
                         //创建geometry
                         point = new Point(cPoint.x, cPoint.y);
                         nowPosition = Position.fromCoordinates(point.getX(),point.getY());
