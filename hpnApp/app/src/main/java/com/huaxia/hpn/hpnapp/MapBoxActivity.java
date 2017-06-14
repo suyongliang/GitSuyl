@@ -12,7 +12,6 @@ import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.location.Location;
-import android.media.Image;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -20,7 +19,6 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,14 +32,15 @@ import android.widget.SearchView;
 import android.widget.Toast;
 
 import com.esri.core.geometry.Point;
+import com.huaxia.hpn.convert.ConvertGauss2Geodetic;
 import com.huaxia.hpn.headerview.MyToolBar;
+import com.huaxia.hpn.route.LineSegment;
 import com.huaxia.hpn.route.RoutePlanning;
 import com.huaxia.hpn.utils.AppUtils;
 import com.huaxia.hpn.utils.HttpUtils;
 import com.huaxia.hpn.utils.ImageUtils;
 import com.huaxia.hpn.utils.IpMacUtils;
 import com.huaxia.hpn.utils.SocketUtil;
-import com.huaxia.hpn.utils.TCPClient;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
@@ -69,7 +68,6 @@ import com.mapbox.services.android.telemetry.location.LocationEngine;
 import com.mapbox.services.android.telemetry.location.LocationEngineListener;
 import com.mapbox.services.android.telemetry.permissions.PermissionsListener;
 import com.mapbox.services.android.telemetry.permissions.PermissionsManager;
-import com.mapbox.services.android.ui.geocoder.GeocoderAutoCompleteView;
 import com.mapbox.services.api.ServicesException;
 import com.mapbox.services.api.directions.v5.DirectionsCriteria;
 import com.mapbox.services.api.directions.v5.MapboxDirections;
@@ -77,8 +75,6 @@ import com.mapbox.services.api.directions.v5.models.DirectionsResponse;
 import com.mapbox.services.api.directions.v5.models.DirectionsRoute;
 import com.mapbox.services.commons.geojson.LineString;
 import com.mapbox.services.commons.models.Position;
-import net.sf.json.JSON;
-import net.sf.json.JSONObject;
 
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
@@ -86,12 +82,10 @@ import org.json.JSONArray;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
 
 import ips.casm.com.radiomap.MPoint;
@@ -143,6 +137,8 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
      */
     private MapBoxActivity.SendPointAndAzimuthTask mSendTask = null;
 
+    // 导航flg
+    private boolean naviFlg=false;
     // 导览flg
     private boolean guideFlg;
     // 定位flg
@@ -177,10 +173,6 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             @Override
             public void onMapReady(MapboxMap mapboxMap) {
                 map = mapboxMap;
-                map.setMaxZoomPreference(20.00);
-                String routesGeojson = loadJsonFromAsset("routes.geojson");
-                RoutePlanning.init(routesGeojson);
-                indoorRouteSource = new GeoJsonSource("indoor-building", routesGeojson);
 
                 longclick(map);
                 for (Marker maker : map.getMarkers()) {
@@ -194,7 +186,9 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 animation.setDuration(500);
                 levelButtons.startAnimation(animation);
                 levelButtons.setVisibility(View.VISIBLE);
-
+                String routesGeojson = loadJsonFromAsset("routes.geojson");
+                RoutePlanning.init(routesGeojson);
+                indoorRouteSource = new GeoJsonSource("indoor-building", routesGeojson);
 //                indoorRouteSource = new GeoJsonSource("indoor-building", loadJsonFromAsset("routes.geojson"));
                 mapboxMap.addSource(indoorRouteSource);
 //
@@ -382,11 +376,14 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 // Set the origin waypoint to the devices location设置初始位置
 //                Position origin = Position.fromCoordinates(mapboxMap.getMyLocation().getLongitude(), mapboxMap.getMyLocation().getLatitude());
                 Point pointBegin = (Point)pointMap.get("Point");
+                if(pointBegin==null){
+                    pointBegin =  new Point(116.420298,39.947635);
+                }
                 Position origin = Position.fromCoordinates(pointBegin.getX(),pointBegin.getY());
 
                 // 设置目的地路径--点击的位置点
                 Position destination = Position.fromCoordinates(point.getLongitude(), point.getLatitude());
-
+                Log.e("longclick: ",pointBegin.toString() + " -- " + destination.toString());
                 // Add marker to the destination waypoint
                 mapboxMap.addMarker(new MarkerOptions()
                         .position(new LatLng(point))
@@ -468,7 +465,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
     }
 
     private  void drawRoute(Position origin, Position destination){
-        List<Position> routePosition = RoutePlanning.getRoutePlanning(origin,destination);
+        List<Position> routePosition = new RoutePlanning().getRoutePlanning(origin,destination);
         LatLng[] points = new LatLng[routePosition.size()];
         for (int i = 0; i < routePosition.size(); i++) {
             points[i] = new LatLng(
@@ -480,6 +477,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 .add(points)
                 .color(Color.parseColor("#009688"))
                 .width(5));
+        naviFlg =true;
     }
 
     private void toggleGps(boolean enableGps) {
@@ -607,24 +605,27 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
     };
 
     private class IPSPointReceiver extends BroadcastReceiver {
+        private MPoint lastPoint=new MPoint();
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.i("IPSPointReceiver", "调用onReceiver()方法");
             // TODO Auto-generated method stub
             //获得service回传的point
             MPoint point_Plane = (MPoint) intent.getExtras().get(iMessage.sendIPSPoint2ActivityBroadcastActionKey);
-
+            Log.e("IPSPointReceiver", "接收到的坐标为：" + point_Plane.toString());
+            ConvertGauss2Geodetic convertGauss2Geodetic = new ConvertGauss2Geodetic();
+            MPoint cPoint = convertGauss2Geodetic.getBL(point_Plane.y,point_Plane.x);
             //创建geometry
-            final Point point = new Point(point_Plane.x, point_Plane.y);
+            Point point = new Point(cPoint.x, cPoint.y);
 
-            Log.i("IPSPointReceiver", point_Plane.toString());
+            Log.e("IPSPointReceiver", cPoint.toString());
 //			//创建投影坐标系的空间参考
 //			SpatialReference cgcs2000NoneZone=SpatialReference.create(4548);
 //			//获取当前地图的空间参考
 //			SpatialReference cgcs2000Geodetic=mMapView.getSpatialReference();
             //投影反算,获得点位信息
 //            mPoint=(Point) GeometryEngine.project(point, cgcs2000NoneZone, cgcs2000Geodetic);
-            Log.i("IPSPointReceiver", "计算后坐标为：" + point_Plane.x + "," + point_Plane.y);
+            Log.e("IPSPointReceiver", "投影后坐标为：" + cPoint.x + "," + cPoint.y);
             //获得azimuth
             float azimuth = point_Plane.getAzimuth();
 //            Point point2 = new Point(116.420298, 39.947635);
@@ -639,6 +640,41 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 // Create an Icon object for the marker to use
                 IconFactory iconFactory = IconFactory.getInstance(MapBoxActivity.this);
                 Icon icon = iconFactory.fromResource(R.drawable.navi_map_gps_locked);
+
+                if(naviFlg){
+                    Position nowPosition = Position.fromCoordinates(point.getX(),point.getY());
+                    if(Math.abs(point_Plane.s-0)>0.1 ){
+                        Position lastPosition = Position.fromCoordinates(lastPoint.x,lastPoint.y);
+                        LineSegment  lineSegment =  RoutePlanning.getNearestLine(lastPosition);
+                        Position start = lineSegment.getP1();
+                        Position end = lineSegment.getP2();
+                        double k = (end.getLongitude()-start.getLongitude())/(end.getLatitude()-start.getLatitude());
+                        double deltaY=point_Plane.s*k/Math.sqrt(k*k+1);
+                        double deltaX=Math.sqrt(point_Plane.s*point_Plane.s-deltaY*deltaY);
+                        MPoint nowPoint=lastPoint;
+                        if(end.getLongitude()-start.getLongitude()>0){
+                            nowPoint.x +=deltaX;
+                        }else{
+                            nowPoint.x -=deltaX;
+                        }
+                        if(end.getLatitude()-start.getLatitude()>0){
+                            nowPoint.y +=deltaY;
+                        }else{
+                            nowPoint.y -=deltaY;
+                        }
+                        Log.i("IPSPointReceiver", "位移坐标为：" + nowPoint.x + "," + nowPoint.y);
+                        cPoint = convertGauss2Geodetic.getBL(nowPoint.y,nowPoint.x);
+                        //创建geometry
+                        point = new Point(cPoint.x, cPoint.y);
+                        nowPosition = Position.fromCoordinates(point.getX(),point.getY());
+                    }else{
+                        lastPoint = point_Plane;
+                    }
+                    Position rp = RoutePlanning.getRouttingPosition(nowPosition);
+                    point= new Point(rp.getLongitude(),rp.getLatitude());
+                }else{
+                    lastPoint = point_Plane;
+                }
 
                 map.addMarker(new MarkerOptions()
                         .position(new LatLng(point.getY(), point.getX()))

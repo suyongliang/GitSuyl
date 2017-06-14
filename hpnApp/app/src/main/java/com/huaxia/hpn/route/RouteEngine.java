@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-import static com.loopj.android.http.AsyncHttpClient.log;
 
 
 public class RouteEngine {
@@ -155,7 +154,7 @@ public class RouteEngine {
 
     // Dijkstra算法实现:找到从startName点出发，到其他所有点的最短路径:选取自己定义的终点
     public List<String> dijkstra(String startName, String endName) {
-        log.e("route.dijkstra ** start: "," vertexMap:"+ vertexMap.size() + " point:"+startName + " <--> " + endName);
+        //log.e("route.dijkstra ** start: "," vertexMap:"+ vertexMap.size() + " point:"+startName + " <--> " + endName);
         List<String> positionNames = new ArrayList<String>();
         PriorityQueue<Vertex> vertexPriorityQueue = new PriorityQueue<Vertex>();// 该队列以权值升序排列，因为Vertex实现Comparable接口
         Vertex start = vertexMap.get(startName);
@@ -166,7 +165,7 @@ public class RouteEngine {
         int seenNum = 0;
         while (!vertexPriorityQueue.isEmpty() && seenNum < vertexMap.size()) {
             Vertex v = vertexPriorityQueue.remove();
-            log.e("route.while ** roop: ","seenNum: " + seenNum + " v.scratch： "+ v.scratch+" v.name: "+v.name);
+            //log.e("route.while ** roop: ","seenNum: " + seenNum + " v.scratch： "+ v.scratch+" v.name: "+v.name);
             if (v.name.equals(endName)) { // 恰好是自己要找的那个点
                 return  getPreNames(v);
             }
@@ -175,7 +174,7 @@ public class RouteEngine {
             for (Edge e : v.edges) {
                 Vertex w = e.dest;
                 double v2wCost = e.cost;
-                log.e("route.Edge ** roop: ",v.name + "" + v2wCost + " "+ w.name);
+                //log.e("route.Edge ** roop: ",v.name + "" + v2wCost + " "+ w.name);
                 if (w.dist > v.dist + v2wCost) {
                     w.dist = v.dist + v2wCost;
                     w.prev = v;
@@ -186,52 +185,7 @@ public class RouteEngine {
         }
         while (vertexPriorityQueue.peek() != null) {
             String positionName = vertexPriorityQueue.poll().toString();
-            log.e("route.peek ** root: ",positionName);
             positionNames.add(positionName);
-        }
-        return positionNames;
-    }
-
-
-    // Dijkstra算法实现:找到从startName点出发，到其他所有点的最短路径:选取自己定义的终点
-    public List<String> dijkstraOld(String startName, String endName) {
-        log.e("route.dijkstra ** start: "," vertexMap:"+ vertexMap.size() + " point:"+startName + " <--> " + endName);
-        List<String> positionNames = new ArrayList<String>();
-        PriorityQueue<Vertex> pq = new PriorityQueue<Vertex>();// 该队列以权值升序排列，因为Vertex实现Comparable接口
-        Vertex start = vertexMap.get(startName);
-        start.dist = 0;
-        for (Vertex v : vertexMap.values()){
-            pq.add(v);
-        }
-        int seenNum = 0;
-        while (!pq.isEmpty() && seenNum < vertexMap.size()) {
-            Vertex v = pq.remove();
-            log.e("route.while ** roop: ","seenNum: " + seenNum + " v.scratch： "+ v.scratch+" v.name: "+v.name);
-            if (v.name.equals(endName)) { // 恰好是自己要找的那个点
-                return  getPreNames(v);
-            }
-            if (v.scratch != 0)            {
-                continue;
-            }
-            v.scratch = 1;
-            seenNum++;
-
-            for (Edge e : v.edges) {
-                Vertex w = e.dest;
-                double v_to_w = e.cost;
-                log.e("route.Edge ** roop: ",v_to_w + " "+ v.name);
-                if (w.dist > v.dist + v_to_w) {
-                    w.dist = v.dist + v_to_w;
-                    w.prev = v;
-                    pq.remove(w);// 出队
-                    pq.add(w);// 按优先级插在队头，先插入的在队头，依次往后
-
-                }
-            }
-        }
-        while (pq.peek() != null) {
-            log.e("route.peek ** root: ",pq.poll().toString());
-            positionNames.add(pq.poll().toString());
         }
         return positionNames;
     }

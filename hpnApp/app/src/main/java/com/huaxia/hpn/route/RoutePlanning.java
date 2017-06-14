@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static com.loopj.android.http.AsyncHttpClient.log;
 
 /**
  * Created by liulx on 2017/6/9.
@@ -170,17 +169,14 @@ public class RoutePlanning {
         return pp;
     }
 
-    public static List<Position> getRoutePlanning(Position startPosition, Position endPosition){
+    public List<Position> getRoutePlanning(Position startPosition, Position endPosition){
         routeEngine.resetRouteVertexMap();
         List<Position> positions = new ArrayList<Position>();
         routeLineSegments = new ArrayList<LineSegment>();
         positions.add(startPosition);
         Position snp = getNearestPosition(startPosition);
         Position sep = getNearestPosition(endPosition);
-        log.e("RoutePlanning.getRoutePlanning ",snp.toString() + " -|- " + sep.toString());
         List<String> positionNames = routeEngine.dijkstra(snp.toString(),sep.toString());
-        log.e("RoutePlanning.positionNames ",positionNames.toString());
-        log.e("","");
         Position firstPosition = null;
         for(String positionName : positionNames){
             Position lastPosition = namePositionMap.get(positionName);
@@ -200,5 +196,10 @@ public class RoutePlanning {
         Position p1 = lineSegment.getP1();
         Position p2 = lineSegment.getP2();
         return routeEngine.getProjectivePoint(p1,p2,position);
+    }
+
+    public static LineSegment getNearestLine(Position position){
+        LineSegment lineSegment = getNearestLine(position,routeLineSegments);
+        return lineSegment;
     }
 }
