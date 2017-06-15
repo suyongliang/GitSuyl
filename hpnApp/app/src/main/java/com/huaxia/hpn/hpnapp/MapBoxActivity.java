@@ -492,9 +492,8 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             }
         } else {
             locationFlg = false;
-            for (Marker maker : map.getMarkers()) {
-                map.removeMarker(maker);
-            }
+            //删除所有之前的标记
+            map.removeAnnotations();
             enableLocation(false);
         }
     }
@@ -634,14 +633,11 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             pointMap.put("Azimuth", azimuth);
 
             if (point != null && map != null && locationFlg){
-                for (Marker maker : map.getMarkers()) {
-                    map.removeMarker(maker);
-                }
                 // Create an Icon object for the marker to use
                 IconFactory iconFactory = IconFactory.getInstance(MapBoxActivity.this);
                 Icon icon = iconFactory.fromResource(R.drawable.navi_map_gps_locked);
 
-                if(naviFlg){
+                if(false){
                     Position nowPosition = Position.fromCoordinates(point.getX(),point.getY());
                     if(Math.abs(point_Plane.s-0)>0.1 ){
                         Position lastPosition = Position.fromCoordinates(lastPoint.x,lastPoint.y);
@@ -675,10 +671,16 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 }else{
                     lastPoint = point_Plane;
                 }
+                // 只删除定位marker
+                for (Marker maker : map.getMarkers()) {
+                    if("location".equals(maker.getTitle())){
+                        map.removeMarker(maker);
+                    }
+                }
 
                 map.addMarker(new MarkerOptions()
                         .position(new LatLng(point.getY(), point.getX()))
-                        .title("我的位置!")
+                        .title("location")
                         .snippet("http://www.baidu.com")
                         .icon(icon));
 //                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
