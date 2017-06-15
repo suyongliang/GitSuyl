@@ -280,7 +280,8 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             @Override
             public void onClick(View view) {
                 if (map != null) {
-                    toggleGps(!map.isMyLocationEnabled());
+//                    toggleGps(!map.isMyLocationEnabled());
+                    toggleGps(!locationFlg);
                 }
             }
         });
@@ -534,7 +535,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             floatingActionButton.setImageResource(R.drawable.ic_my_location_24dp);
         }
         // Enable or disable the location layer on the map
-        map.setMyLocationEnabled(enabled);
+//        map.setMyLocationEnabled(enabled);
     }
 
     @Override
