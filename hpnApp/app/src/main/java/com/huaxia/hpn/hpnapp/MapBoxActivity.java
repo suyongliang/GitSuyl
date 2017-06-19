@@ -68,6 +68,7 @@ import com.mapbox.services.android.telemetry.location.LocationEngine;
 import com.mapbox.services.android.telemetry.location.LocationEngineListener;
 import com.mapbox.services.android.telemetry.permissions.PermissionsListener;
 import com.mapbox.services.android.telemetry.permissions.PermissionsManager;
+import com.mapbox.services.android.telemetry.utils.MathUtils;
 import com.mapbox.services.api.ServicesException;
 import com.mapbox.services.api.directions.v5.DirectionsCriteria;
 import com.mapbox.services.api.directions.v5.MapboxDirections;
@@ -376,7 +377,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 // Set the origin waypoint to the devices location设置初始位置
 //                Position origin = Position.fromCoordinates(mapboxMap.getMyLocation().getLongitude(), mapboxMap.getMyLocation().getLatitude());
                 Point pointBegin = (Point)pointMap.get("Point");
-                if(pointBegin==null){
+                if(pointBegin==null|| Math.abs(pointBegin.getX())<0.1||Math.abs(pointBegin.getY())<0.1){
                     pointBegin =  new Point(116.420298,39.947635);
                 }
                 Position origin = Position.fromCoordinates(pointBegin.getX(),pointBegin.getY());
@@ -506,7 +507,9 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             if (lastLocation != null) {
 //                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(lastLocation), 16));
                 Point point = (Point)pointMap.get("Point");
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 22.5));
+                if(point!=null){
+                    map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 22.5));
+                }
             }
 
             locationEngineListener = new LocationEngineListener() {
@@ -612,6 +615,12 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             // TODO Auto-generated method stub
             //获得service回传的point
             MPoint point_Plane = (MPoint) intent.getExtras().get(iMessage.sendIPSPoint2ActivityBroadcastActionKey);
+            if(Double.isNaN(point_Plane.x)){
+                point_Plane.x = 0.0;
+            };
+            if(Double.isNaN(point_Plane.y)){
+                point_Plane.y = 0.0;
+            };
             Log.e("IPSPointReceiver", "接收到的坐标为：" + point_Plane.toString());
             ConvertGauss2Geodetic convertGauss2Geodetic = new ConvertGauss2Geodetic();
             MPoint cPoint = convertGauss2Geodetic.getLatLon(point_Plane.y,point_Plane.x);
@@ -629,6 +638,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             //获得azimuth
             float azimuth = point_Plane.getAzimuth();
 //            Point point2 = new Point(116.420298, 39.947635);
+
             pointMap.put("Point", point);
 //            pointMap.put("Point", point2);
             pointMap.put("Azimuth", azimuth);
@@ -641,7 +651,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 IconFactory iconFactory = IconFactory.getInstance(MapBoxActivity.this);
                 Icon icon = iconFactory.fromResource(R.drawable.navi_map_gps_locked);
 
-                if(naviFlg){
+                if(false){
                     Position nowPosition = Position.fromCoordinates(point.getX(),point.getY());
                     if(Math.abs(point_Plane.s-0)>0.1 ){
                         Position lastPosition = Position.fromCoordinates(lastPoint.x,lastPoint.y);

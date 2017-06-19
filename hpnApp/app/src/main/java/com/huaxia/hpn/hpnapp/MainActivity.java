@@ -229,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
         tv_clear_cache = (TextView) findViewById(R.id.clear_cache);
 
         // 保存的用户名密码
-        sp = this.getSharedPreferences("userInfo", Context.MODE_WORLD_READABLE);
+        sp = this.getSharedPreferences("userInfo", Context.MODE_PRIVATE);
         // 自动登录
         autoLogin();
     }
