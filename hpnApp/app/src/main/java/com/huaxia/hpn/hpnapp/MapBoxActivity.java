@@ -281,7 +281,8 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             @Override
             public void onClick(View view) {
                 if (map != null) {
-                    toggleGps(!map.isMyLocationEnabled());
+//                    toggleGps(!map.isMyLocationEnabled());
+                    toggleGps(!locationFlg);
                 }
             }
         });
@@ -493,9 +494,8 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             }
         } else {
             locationFlg = false;
-            for (Marker maker : map.getMarkers()) {
-                map.removeMarker(maker);
-            }
+            //删除所有之前的标记
+            map.removeAnnotations();
             enableLocation(false);
         }
     }
@@ -538,7 +538,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             floatingActionButton.setImageResource(R.drawable.ic_my_location_24dp);
         }
         // Enable or disable the location layer on the map
-        map.setMyLocationEnabled(enabled);
+//        map.setMyLocationEnabled(enabled);
     }
 
     @Override
@@ -644,9 +644,6 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             pointMap.put("Azimuth", azimuth);
 
             if (point != null && map != null && locationFlg){
-                for (Marker maker : map.getMarkers()) {
-                    map.removeMarker(maker);
-                }
                 // Create an Icon object for the marker to use
                 IconFactory iconFactory = IconFactory.getInstance(MapBoxActivity.this);
                 Icon icon = iconFactory.fromResource(R.drawable.navi_map_gps_locked);
@@ -673,7 +670,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                             nowPoint.y -=deltaY;
                         }
                         Log.i("IPSPointReceiver", "位移坐标为：" + nowPoint.x + "," + nowPoint.y);
-                        cPoint = convertGauss2Geodetic.getBL(nowPoint.y,nowPoint.x);
+                        cPoint = convertGauss2Geodetic.getLatLon(nowPoint.y,nowPoint.x);
                         //创建geometry
                         point = new Point(cPoint.x, cPoint.y);
                         nowPosition = Position.fromCoordinates(point.getX(),point.getY());
@@ -685,10 +682,16 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 }else{
                     lastPoint = point_Plane;
                 }
+                // 只删除定位marker
+                for (Marker maker : map.getMarkers()) {
+                    if("location".equals(maker.getTitle())){
+                        map.removeMarker(maker);
+                    }
+                }
 
                 map.addMarker(new MarkerOptions()
                         .position(new LatLng(point.getY(), point.getX()))
-                        .title("我的位置!")
+                        .title("location")
                         .snippet("http://www.baidu.com")
                         .icon(icon));
 //                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
