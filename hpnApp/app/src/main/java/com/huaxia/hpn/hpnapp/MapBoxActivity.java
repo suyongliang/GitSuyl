@@ -570,6 +570,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             String IPSFolderPath = SystemDirPath + File.separator + "IndoorPositionSystem";
             String RadioMapPath = IPSFolderPath + File.separator + "RadioMap";
             String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map.txt";
+//            String rmfilePath = getClass().getResource("Dice_Radio_Map.txt").getPath(); //getResources().getAssets().toString() + "file:///android_asset/Dice_Radio_Map.txt";
             //魅族手机获取的是相对路径。
             File rmFile = new File(rmfilePath);
             if (!rmFile.exists()) {

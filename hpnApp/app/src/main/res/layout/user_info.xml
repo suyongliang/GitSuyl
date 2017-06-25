@@ -10,7 +10,7 @@
           android:id="@+id/layout_login"
           android:layout_width="fill_parent"
           android:layout_height="150dp"
-          android:background="@color/peachpuff"
+          android:background="@color/royalblue"
           android:gravity="center_horizontal"
           android:orientation="vertical">
             <ImageView
