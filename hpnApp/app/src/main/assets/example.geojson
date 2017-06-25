@@ -1,0 +1,20 @@
+{
+    "type": "FeatureCollection",
+      "features": [{
+          "type": "Feature",
+          "geometry": {
+              "type": "Point",
+              "coordinates": [116.42038278358325,39.947758522733309]
+          },
+          "properties": {
+              "title": "Small astronaut",
+              "icon": {
+                  "iconUrl": "https://www.mapbox.com/mapbox.js/assets/images/astronaut1.png",
+                  "iconSize": [50, 50],
+                  "iconAnchor": [25, 25],
+                  "popupAnchor": [0, -25],
+                  "className": "dot"
+              }
+          }
+      }]
+}

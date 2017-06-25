@@ -95,6 +95,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+import static com.huaxia.hpn.utils.AppUtils.InputStreamToByte;
 import static com.mapbox.mapboxsdk.style.layers.Property.VISIBLE;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.fillOpacity;
@@ -569,13 +570,17 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             String SystemDirPath = Environment.getExternalStorageDirectory().toString();
             String IPSFolderPath = SystemDirPath + File.separator + "IndoorPositionSystem";
             String RadioMapPath = IPSFolderPath + File.separator + "RadioMap";
-            String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map.txt";
-//            String rmfilePath = getClass().getResource("Dice_Radio_Map.txt").getPath(); //getResources().getAssets().toString() + "file:///android_asset/Dice_Radio_Map.txt";
+            String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map2.txt";
             //魅族手机获取的是相对路径。
             File rmFile = new File(rmfilePath);
             if (!rmFile.exists()) {
-                Toast.makeText(MapBoxActivity.this, "没有找到该指纹库文件", Toast.LENGTH_SHORT).show();
-                finish();
+                InputStream abpath = getClass().getResourceAsStream("/assets/Dice_Radio_Map.txt");
+                if(AppUtils.InputStreamToByte(abpath)){
+                    rmFilePathStr = rmfilePath;
+                } else {
+                    Toast.makeText(MapBoxActivity.this, "没有找到该指纹库文件", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
             } else {
                 rmFilePathStr = rmfilePath;
                 Log.i("IPS_DCActivity", "获得的文件路径为：" + rmfilePath);

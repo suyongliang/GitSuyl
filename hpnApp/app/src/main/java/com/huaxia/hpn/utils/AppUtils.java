@@ -4,7 +4,12 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Environment;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
@@ -83,6 +88,28 @@ public class AppUtils
 
         System.out.println(urlProps.getProperty("serverUrl"));
         return urlProps;
+    }
+
+    public static boolean InputStreamToByte(InputStream is) {
+        ByteArrayOutputStream bytestream = new ByteArrayOutputStream();
+        String SystemDirPath = Environment.getExternalStorageDirectory().toString();
+        String IPSFolderPath = SystemDirPath + File.separator + "IndoorPositionSystem";
+        String RadioMapPath = IPSFolderPath + File.separator + "RadioMap";
+        String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map2.txt";
+        try {
+            FileOutputStream fos = new FileOutputStream(new File(rmfilePath));
+            int len = 0;
+            byte[] buffer = new byte[1024];
+            while ((len = is.read(buffer)) != -1) {
+                fos.write(buffer, 0, len);
+                fos.flush();
+            }
+            return true;
+        } catch (Exception e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+            return false;
+        }
     }
 
 }
