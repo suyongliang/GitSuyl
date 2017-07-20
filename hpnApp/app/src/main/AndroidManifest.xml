@@ -26,8 +26,9 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
+        android:name=".MyApplication"
         android:theme="@style/AppTheme">
-        <activity android:name=".WelcomeActivity">
+        <activity android:name="com.huaxia.hpn.hpnapp.WelcomeActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -35,17 +36,17 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MainActivity"
+            android:name="com.huaxia.hpn.hpnapp.MainActivity"
             android:launchMode="singleTop"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
-            android:name=".MainActivity2"
+            android:name="com.huaxia.hpn.hpnapp.MainActivity2"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
-            android:name=".PhotoGuideActivity"
+            android:name="com.huaxia.hpn.hpnapp.PhotoGuideActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
-            android:name=".PhotoActivity"
+            android:name="com.huaxia.hpn.hpnapp.PhotoActivity"
             android:label="@string/photo_name"
             android:launchMode="singleTop"
             android:parentActivityName=".MainActivity">
@@ -54,7 +55,7 @@
                 android:value="com.huaxia.hpn.hpnapp.MainActivity" />
         </activity>
         <activity
-            android:name=".PopupActivity"
+            android:name="com.huaxia.hpn.hpnapp.PopupActivity"
             android:parentActivityName=".MainActivity"
             android:theme="@style/dialogstyle">
             <meta-data
@@ -62,7 +63,7 @@
                 android:value="com.huaxia.hpn.hpnapp.MainActivity" />
         </activity>
         <activity
-            android:name=".MapBoxActivity"
+            android:name="com.huaxia.hpn.hpnapp.MapBoxActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
         <service android:name="com.mapbox.services.android.telemetry.service.TelemetryService" />
@@ -83,7 +84,7 @@
             android:name="com.huaxia.hpn.user.MyDetInfoActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <activity
-            android:name=".PhotoDetailActivity"
+            android:name="com.huaxia.hpn.hpnapp.PhotoDetailActivity"
             android:theme="@style/MyDialogStyleBottom"
             android:launchMode="singleTop">
             <!--android:label="@string/guide_name"-->
@@ -92,6 +93,11 @@
                 <!--android:name="android.support.PARENT_ACTIVITY"-->
                 <!--android:value="com.huaxia.hpn.hpnapp.MapBoxActivity" />-->
         </activity>
+        <activity
+            android:name="com.huaxia.hpn.hpnapp.SimpleMapViewActivity"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
     </application>
 
 </manifest>

@@ -17,8 +17,12 @@ android {
         multiDexEnabled true
     }
     buildTypes {
-        release {
+        debug {
             minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        release {
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -31,10 +35,21 @@ android {
         exclude 'META-INF/LGPL2.1'
         //exclude 'commons-collections-3.2.1.jar'
     }
+    // 保证其他的lib没有被preDex
+    dexOptions {
+        preDexLibraries = false
+        javaMaxHeapSize "1g"
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs']
+        }
+    }
 }
 
 repositories {
     maven { url "https://jitpack.io" }
+    maven { url "https://repo1.maven.org/maven2/" }
     maven { url "http://oss.sonatype.org/content/repositories/snapshots/" }
 }
 
@@ -43,9 +58,10 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'com.android.support:appcompat-v7:25.3.0'
-    compile 'com.android.support:design:25.3.0'
+    compile 'com.android.support:appcompat-v7:25.1.1'
+    compile 'com.android.support:design:25.1.1'
 //    compile "com.android.support:recyclerview-v7:25.1.1"
+
     testCompile 'junit:junit:4.12'
     //compile 'com.esri.arcgis.android:arcgis-android:10.2.9'
 //    compile files('libs/arcgis-android-api.jar')
@@ -79,4 +95,5 @@ dependencies {
     compile('org.apache.httpcomponents:httpcore:4.4.5') {
         exclude module: 'beanutils'
     }
+    compile 'com.android.support:multidex:1.0.1'
 }

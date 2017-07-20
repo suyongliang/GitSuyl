@@ -17,7 +17,7 @@
         mapbox:mapbox_styleUrl="mapbox://styles/maper/cizfl4jyx007m2sji1ndyc4nl"
         mapbox:mapbox_cameraTargetLng="116.420298"
         mapbox:mapbox_cameraTargetLat="39.947635"
-        mapbox:mapbox_cameraZoom="25">
+        mapbox:mapbox_cameraZoom="20">
 
         <!--<com.mapbox.services.android.geocoder.ui.GeocoderAutoCompleteView-->
             <!--android:id="@+id/query"-->
