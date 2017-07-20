@@ -95,7 +95,7 @@ public class AppUtils
         String SystemDirPath = Environment.getExternalStorageDirectory().toString();
         String IPSFolderPath = SystemDirPath + File.separator + "IndoorPositionSystem";
         String RadioMapPath = IPSFolderPath + File.separator + "RadioMap";
-        String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map2.txt";
+        String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map.txt";
         try {
             FileOutputStream fos = new FileOutputStream(new File(rmfilePath));
             int len = 0;
