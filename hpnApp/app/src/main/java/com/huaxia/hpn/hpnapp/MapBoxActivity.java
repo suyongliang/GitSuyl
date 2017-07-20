@@ -19,6 +19,7 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -105,7 +106,7 @@ import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.visibility;
 import static java.lang.Thread.sleep;
 
-public class MapBoxActivity extends Activity implements PermissionsListener, SearchView.OnQueryTextListener {
+public class MapBoxActivity extends AppCompatActivity implements PermissionsListener, SearchView.OnQueryTextListener {
     private static final String TAG = "Activity";
     private static final int PERMISSIONS_LOCATION = 0;
     private MapView mapView;
@@ -376,6 +377,10 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                 //删除所有之前的标记
                 mapboxMap.removeAnnotations();
 
+                for (Marker maker : map.getMarkers()) {
+                    map.removeMarker(maker);
+                }
+
                 // Set the origin waypoint to the devices location设置初始位置
 //                Position origin = Position.fromCoordinates(mapboxMap.getMyLocation().getLongitude(), mapboxMap.getMyLocation().getLatitude());
                 Point pointBegin = (Point)pointMap.get("Point");
@@ -570,7 +575,11 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             String SystemDirPath = Environment.getExternalStorageDirectory().toString();
             String IPSFolderPath = SystemDirPath + File.separator + "IndoorPositionSystem";
             String RadioMapPath = IPSFolderPath + File.separator + "RadioMap";
-            String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map2.txt";
+            File f = new File(RadioMapPath);
+            if(!f.exists()){// 判断指纹库文件夹存不存在，不存在就创建
+                f.mkdirs();
+            }
+            String rmfilePath = RadioMapPath + File.separator + "Dice_Radio_Map.txt";
             //魅族手机获取的是相对路径。
             File rmFile = new File(rmfilePath);
             if (!rmFile.exists()) {
@@ -700,7 +709,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
                         .title("location")
                         .snippet("http://www.baidu.com")
                         .icon(icon));
-//                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
+                map.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(point.getY(),point.getX()), 20.5));
             }
 //            sendPoint();
 
@@ -715,6 +724,7 @@ public class MapBoxActivity extends Activity implements PermissionsListener, Sea
             locationEngine.removeLocationEngineListener(locationEngineListener);
         }
         if (mapView != null) {
+            mapView.onStop();
             mapView.onDestroy();
         }
         if (startIpsServiceIntent != null) {
